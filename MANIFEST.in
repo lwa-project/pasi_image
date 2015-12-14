@@ -1,0 +1,6 @@
+include README
+include CHANGELOG
+recursive-include lsl_toolkits *
+recursive-include tests *
+global-exclude *~ *.bak *.pyc *.o *.d
+
