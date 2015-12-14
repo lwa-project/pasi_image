@@ -27,6 +27,9 @@ setup(
   packages             = find_packages(exclude="tests"), 
   namespace_packages   = ['lsl_toolkits',],
   scripts              = glob.glob('scripts/*.py'), 
+  setup_requires       = ['numpy>=1.2'], 
+  install_requires     = ['construct>=2.5.2',], 
   include_package_data = True,  
   zip_safe             = False,  
+  test_suite           = "tests.test_pims.pims_tests"
 )
