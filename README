@@ -10,6 +10,9 @@ REQUIREMENTS
 	python >= 2.6 and python < 3.0
 	numpy >= 1.2
 	construct >= 2.5.2
+	*lsl >= 1.1.0
+	*matplotlib >= 0.98.3
+	(* required for some of the scripts)
 
 BUILD
 	The PasiImage package is installed as a regular Python package using distutils.  
