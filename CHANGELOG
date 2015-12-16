@@ -1,3 +1,6 @@
+0.1.2
+  * Added a new script to help convert .pims files into FITS images
+
 0.1.1
   * Updated the list of software dependencies
   * Added two scripts to provide examples of how to work with the data

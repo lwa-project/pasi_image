@@ -14,7 +14,7 @@ except ImportError:
 
 setup(
   name                 = "PasiImage",
-  version              = "0.1.1",
+  version              = "0.1.2",
   description          = "Python reader for PASI Image Database files",
   url                  = "http://fornax.phys.unm.edu/lwa/trac/", 
   author               = "Jake Hartman",
