@@ -70,7 +70,7 @@ def main(args):
 		print "  Imager: %s" % db.header.imagerVersion
 		print "  Station: %s" % db.header.station
 		print "  Stokes Parameters: %s" % db.header.stokesParams
-		print "  Image Size: %i by %i" % (db.header.xSize, db.header.ySize)
+		print "  Image Size: %i by %i with %.3f deg/px" % (db.header.xSize, db.header.ySize, db.header.xPixelSize)
 		print "  Number of Integrations: %i" % db.nIntegrations
 		
 		## Report - first image
