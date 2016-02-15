@@ -104,12 +104,31 @@ def main(args):
 				
 			stokes = hdr.stokesParams.split(',')
 			
+			### Save the image size for later
+			imSize = img.shape[-1]
+			
+			### Zero outside of the horizon so avoid problems
+			pCntr = imSize/2 + 1 + 0.5 * ((imSize+1)%2)
+			pScale = hdr['xPixelSize']
+			sRad   = 360.0/pScale/numpy.pi / 2
+			
+			x = numpy.arange(1, img.shape[-2]+1, dtype=numpy.float32) - pCntr
+			y = numpy.arange(1, img.shape[-1]+1, dtype=numpy.float32) - pCntr
+			x /= -sRad
+			y /= sRad
+			x,y = numpy.meshgrid(x,y)
+			invalid = numpy.where( (x**2 + y**2) > 1 )
+			img[:, invalid[0], invalid[1]] = 0.0
+			extent = (x.max(), x.min(), y.min(), y.max())
+			
 			### Loop over Stokes parameters
 			fig = plt.figure()
 			for j,label in enumerate(stokes):
 				ax = fig.add_subplot(2, 2, j+1)
-				ax.imshow(img[j,:,:].T, origin='lower', interpolation='nearest', extent=(1,-1,-1,1))
+				ax.imshow(img[j,:,:].T, origin='lower', interpolation='nearest', extent=extent)
 				ax.set_title(label)
+				ax.set_xlim((1,-1))
+				ax.set_ylim((-1,1))
 				
 				## Turn off tick marks
 				ax.xaxis.set_major_formatter( NullFormatter() )

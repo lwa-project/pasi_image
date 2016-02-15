@@ -94,12 +94,13 @@ def main(args):
 			
 			## Zero outside of the horizon so avoid problems
 			pScale = header['xPixelSize']
-			sRad   = 130.0/pScale/2.0
-			x = numpy.arange(data.shape[-2])
-			y = numpy.arange(data.shape[-1])
+			sRad   = 360.0/pScale/numpy.pi / 2
+			x = numpy.arange(data.shape[-2]) - 0.5
+			y = numpy.arange(data.shape[-1]) - 0.5
 			x,y = numpy.meshgrid(x,y)
-			invalid = numpy.where( ((x-imSize/2)**2 + (y-imSize/2)**2) >= (sRad**2) )
+			invalid = numpy.where( ((x-imSize/2.0)**2 + (y-imSize/2.0)**2) > (sRad**2) )
 			data[:, invalid[0], invalid[1]] = 0.0
+			ext = imSize/(2*sRad)
 			
 			## Convert the start MJD into a datetime instance and then use 
 			## that to come up with a stop time
@@ -123,12 +124,12 @@ def main(args):
 			hdu.header['EXPTIME'] = tInt
 			### Coordinates - sky
 			hdu.header['CTYPE1'] = 'RA---SIN'
-			hdu.header['CRPIX1'] = imSize/2+1
+			hdu.header['CRPIX1'] = imSize/2 + 1 + 0.5 * ((imSize+1)%2)
 			hdu.header['CDELT1'] = -360.0/(2*sRad)/numpy.pi
 			hdu.header['CRVAL1'] = header['zenithRA']
 			hdu.header['CUNIT1'] = 'deg'
 			hdu.header['CTYPE2'] = 'DEC--SIN'
-			hdu.header['CRPIX2'] = imSize/2+1
+			hdu.header['CRPIX2'] = imSize/2 + 1 + 0.5 * ((imSize+1)%2)
 			hdu.header['CDELT2'] = 360.0/(2*sRad)/numpy.pi
 			hdu.header['CRVAL2'] = header['zenithDec']
 			hdu.header['CUNIT2'] = 'deg'
