@@ -111,7 +111,6 @@ def main(args):
 			pCntr = imSize/2 + 1 + 0.5 * ((imSize+1)%2)
 			pScale = hdr['xPixelSize']
 			sRad   = 360.0/pScale/numpy.pi / 2
-			
 			x = numpy.arange(1, img.shape[-2]+1, dtype=numpy.float32) - pCntr
 			y = numpy.arange(1, img.shape[-1]+1, dtype=numpy.float32) - pCntr
 			x /= -sRad
@@ -119,7 +118,11 @@ def main(args):
 			x,y = numpy.meshgrid(x,y)
 			invalid = numpy.where( (x**2 + y**2) > 1 )
 			img[:, invalid[0], invalid[1]] = 0.0
-			extent = (x.max(), x.min(), y.min(), y.max())
+			
+			### Try and set the image scale correctly for the display
+			x2 = x - 1 / sRad
+			y2 = y - 1 / sRad
+			extent = (x2.max(), x2.min(), y.min(), y.max())
 			
 			### Loop over Stokes parameters
 			fig = plt.figure()
