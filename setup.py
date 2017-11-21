@@ -14,7 +14,7 @@ except ImportError:
 
 setup(
   name                 = "PasiImage",
-  version              = "0.1.3",
+  version              = "0.1.4",
   description          = "Python reader for PASI Image Database files",
   url                  = "http://fornax.phys.unm.edu/lwa/trac/", 
   author               = "Jake Hartman",
@@ -28,7 +28,7 @@ setup(
   namespace_packages   = ['lsl_toolkits',],
   scripts              = glob.glob('scripts/*.py'), 
   setup_requires       = ['numpy>=1.2'], 
-  install_requires     = ['construct>=2.5.1',], 
+  install_requires     = ['construct>=2.5,<2.8',], 
   include_package_data = True,  
   zip_safe             = False,  
   test_suite           = "tests.test_pims.pims_tests"
