@@ -25,7 +25,7 @@ class PasiImageDB(object):
     the file's header information.
     
     Public module variables:
-    header -- a class with member variables describing the data, including:
+      header -- a class with member variables describing the data, including:
         corrVersion, a string giving the correlator version
         imagerVersion, ditto for the imager
         station, the station name
@@ -36,8 +36,8 @@ class PasiImageDB(object):
         flags, a bitfield: 0x1 = sorted; others zero
         startTime, the earliest time of data covered by this file, in MJD UTC
         stopTime, the latest time of data, in MJD UTC
-    file -- the underlying file object, which probably shouldn't be touched
-    version -- the format version of the output file
+      file -- the underlying file object, which probably shouldn't be touched
+      version -- the format version of the output file
     """
     
     # The PasiImageDB files start with a 16 byte string that specifies the
@@ -144,11 +144,11 @@ class PasiImageDB(object):
             construct.Array(2, construct.LFloat64('worldreplace0'))),
         }
     _timeOffsets = { 'PasiImageDBv001': 256,
-                     'PasiImageDBv002': 256,
-                     'PasiImageDBv003': 256 }
+                    'PasiImageDBv002': 256,
+                    'PasiImageDBv003': 256 }
     
     def __init__(self, fileName, mode = 'r',
-                 corrVersion = '', imagerVersion = '', station = ''):
+                corrVersion = '', imagerVersion = '', station = ''):
         """
         Constructs a new PasiImageDB.
         
@@ -169,7 +169,7 @@ class PasiImageDB(object):
             self._isNewFile = False
             if not os.path.isfile(fileName):
                 raise OSError('The specified file, "%s", does not exist.'
-                              % fileName)
+                            % fileName)
             fileSize = os.path.getsize(fileName)
             if fileSize == 0:
                 self.version = 'empty file'
@@ -220,8 +220,8 @@ class PasiImageDB(object):
             self.version = self.file.read(16).rstrip('\x00')
             if self.version not in self._fileHeaderStructs:
                 raise KeyError('The file "%s" does not appear to be a '
-                               'PasiImageDB file.  Initial string: "%s"' %
-                               (fileName, self.version))
+                            'PasiImageDB file.  Initial string: "%s"' %
+                            (fileName, self.version))
             headerStruct = self._fileHeaderStructs[self.version]
             
             if mode != 'r' and fileSize <= 16 + headerStruct.sizeof():
@@ -242,10 +242,10 @@ class PasiImageDB(object):
                 
                 intSize = self._intHeaderStructs[self.version].sizeof() + \
                     4 * (self.header.nSpecChans +
-                         self.nStokes * self.header.xSize * self.header.ySize)
+                        self.nStokes * self.header.xSize * self.header.ySize)
                 if (fileSize - 16 - headerStruct.sizeof()) % intSize != 0:
                     raise RuntimeError('The file "%s" appears to be '
-                                       'corrupted.' % fileName)
+                                    'corrupted.' % fileName)
                 self.nIntegrations = \
                     (fileSize - 16 - headerStruct.sizeof()) / intSize
                 
@@ -315,19 +315,19 @@ class PasiImageDB(object):
             index += self.nIntegrations
         if index < 0 or index >= self.nIntegrations:
             raise IndexError('PasiImageDB index %d outside of range [0, %d)' %
-                             (index, self.nIntegrations))
+                            (index, self.nIntegrations))
         if self.iIntegration != index:
             intSize = self._intHeaderStructs[self.version].sizeof() + \
                 4 * (self.header.nSpecChans +
-                     self.nStokes * self.header.xSize * self.header.ySize)
+                    self.nStokes * self.header.xSize * self.header.ySize)
             headerSize = 16 + self._fileHeaderStructs[self.version].sizeof()
             self.file.seek(headerSize + intSize * index, os.SEEK_SET)
             self.iIntegration = index
     
     
     def _checkHeader(self, stokesParams, xSize, ySize,
-                      xPixelSize, yPixelSize, nSpecChans,
-                      station = None):
+                    xPixelSize, yPixelSize, nSpecChans,
+                    station = None):
         """
         For new files, adds the given information to the file header and
         writes the header to disk.  For existing files, compares the given
@@ -374,16 +374,16 @@ class PasiImageDB(object):
             if xSize != self.header.xSize or ySize != self.header.ySize:
                 raise ValueError(
                     'The spatial resolution of this image (%d x %d) does not '
-                     'match this file\'s resolution (%d x %d).' %
+                    'match this file\'s resolution (%d x %d).' %
                     (xSize, ySize, self.header.xSize, self.header.ySize))
             
             if xPixelSize != self.header.xPixelSize or \
-               yPixelSize != self.header.yPixelSize:
+            yPixelSize != self.header.yPixelSize:
                 raise ValueError(
                     'The pixel size of this image (%r deg x %r deg) does not '
-                     'match this file\'s resolution (%r deg x %r deg).' %
+                    'match this file\'s resolution (%r deg x %r deg).' %
                     (xPixelSize, yPixelSize,
-                     self.header.xPixelSize, self.header.yPixelSize))
+                    self.header.xPixelSize, self.header.yPixelSize))
             
             # Make sure that the size of the spectrum matches expectations.
             if nSpecChans != self.header.nSpecChans:
@@ -402,7 +402,7 @@ class PasiImageDB(object):
         
         # Has this image expanded the time range covered by the file?
         if self.header.startTime == 0 or \
-           self.header.startTime > interval[0]:
+        self.header.startTime > interval[0]:
             self.header.startTime = interval[0]
             self._fileHeaderOutdated = True
         
@@ -422,7 +422,7 @@ class PasiImageDB(object):
         added image.
         
         Arguments:
-        info -- an object with the following member variables defined:
+          info -- an object with the following member variables defined:
             visFileName -- the name of the visibility file that was imaged
             startTime -- MJD UTC at which this integration began
             centroidTime -- mean MJD UTC of this integration
@@ -438,8 +438,8 @@ class PasiImageDB(object):
             yPixelSize -- Real-world height of a pixel, in degrees
             worldreplace0 -- CASA-defined two-element float; purpose unknown
             stokesParams -- a list or comma-delimited string of Stokes params
-        data -- a 3D float array of image data indexed as [iStokes, x, y]
-        spec -- an optional array containing the single dipole spectrum
+          data -- a 3D float array of image data indexed as [iStokes, x, y]
+          spec -- an optional array containing the single dipole spectrum
         """
         
         self._checkHeader(
@@ -500,7 +500,7 @@ class PasiImageDB(object):
         else:
             spec = None
         data = np.fromfile(self.file, np.float32, nStokes * cx * cy
-                           ).reshape(nStokes, cx, cy)
+                        ).reshape(nStokes, cx, cy)
         
         self.iIntegration += 1
         return intHeader, data, spec
@@ -529,14 +529,14 @@ class PasiImageDB(object):
         inDB.file.close()
         if len(data) != intSize * inDB.nIntegrations:
             raise RuntimeError('The file "%s" appears to be corrupted.' %
-                               fileName)
+                            fileName)
         
         # Loop throught the input DB's images, saving their image times.
         # Determine the sort order of those times.
         times = np.array([
                 struct.unpack_from('d', data, offset = i)[0] for i in
                 xrange(PasiImageDB._timeOffsets[inDB.version],
-                       intSize * inDB.nIntegrations, intSize)])
+                    intSize * inDB.nIntegrations, intSize)])
         
         intOrder = times.argsort()
         
