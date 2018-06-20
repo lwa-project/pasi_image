@@ -11,7 +11,7 @@ except ImportError:
 
 setup(
     name                 = "lsl-toolkits-pasiimage",
-    version              = "0.1.4",
+    version              = "0.1.5",
     description          = "LSL Toolkit for PASI Image Database Files", 
     long_description     = "LWA Software Library reader for PASI Image Database files",
     url                  = "https://fornax.phys.unm.edu/lwa/trac/", 
