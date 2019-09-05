@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+
 import glob
 
 from setuptools import setup, Extension, Distribution, find_packages
@@ -36,5 +39,5 @@ setup(
     install_requires     = ['numpy>=1.2', 'construct>=2.5,<2.8',], 
     include_package_data = True,  
     zip_safe             = False,  
-    test_suite           = "tests.test_pims.pims_tests"
+    test_suite           = "tests"
 )

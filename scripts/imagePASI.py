@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import sys
 import numpy
@@ -19,7 +25,7 @@ from matplotlib.ticker import NullFormatter
 
 
 def usage(exitCode=None):
-    print """imagePASI.py - Display images in a PASI .pims file
+    print("""imagePASI.py - Display images in a PASI .pims file
 
 Usage:  imagePASI.py [OPTIONS] file [file [...]]
 
@@ -28,7 +34,7 @@ Options:
 -s, --dataset           Data set to image (Default = All)
 -n, --no-labels         Disable source and grid labels
 -g, --no-grid           Disable the RA/Dec grid
-"""
+""")
     
     if exitCode is not None:
         sys.exit(exitCode)
@@ -49,7 +55,7 @@ def parseOptions(args):
         opts, args = getopt.getopt(args, "hs:ng", ["help", "dataset=", "no-labels", "no-grid"])
     except getopt.GetoptError, err:
         # Print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err)) # will print something like "option -a not recognized"
         usage(exitCode=2)
         
     # Work through opts
@@ -82,7 +88,7 @@ def main(args):
         try:
             db = PasiImageDB(filename, 'r')
         except Exception as e:
-            print "ERROR: %s" % str(e)
+            print("ERROR: %s" % str(e))
             continue
             
         ## Setup the array

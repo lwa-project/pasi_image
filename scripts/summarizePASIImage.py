@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import sys
 import getopt
@@ -11,13 +17,13 @@ from lsl_toolkits.PasiImage import PasiImageDB
 
 
 def usage(exitCode=None):
-    print """summarizePASIImage.py - Print metadata about a PASI .pims file
+    print("""summarizePASIImage.py - Print metadata about a PASI .pims file
 
 Usage:  summarizePASIImage.py [OPTIONS] file [file [...]]
 
 Options:
 -h, --help              Display this help information
-"""
+""")
     
     if exitCode is not None:
         sys.exit(exitCode)
@@ -34,7 +40,7 @@ def parseOptions(args):
         opts, args = getopt.getopt(args, "h", ["help",])
     except getopt.GetoptError, err:
         # Print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err)) # will print something like "option -a not recognized"
         usage(exitCode=2)
         
     # Work through opts
@@ -61,17 +67,17 @@ def main(args):
         try:
             db = PasiImageDB(filename, 'r')
         except Exception as e:
-            print "ERROR: %s" % str(e)
+            print("ERROR: %s" % str(e))
             continue
             
         ## Report - overall
-        print "Filename: %s" % os.path.basename(filename)
-        print "  Correlator: %s" % db.header.corrVersion
-        print "  Imager: %s" % db.header.imagerVersion
-        print "  Station: %s" % db.header.station
-        print "  Stokes Parameters: %s" % db.header.stokesParams
-        print "  Image Size: %i by %i with %.3f deg/px" % (db.header.xSize, db.header.ySize, db.header.xPixelSize)
-        print "  Number of Integrations: %i" % db.nIntegrations
+        print("Filename: %s" % os.path.basename(filename))
+        print("  Correlator: %s" % db.header.corrVersion)
+        print("  Imager: %s" % db.header.imagerVersion)
+        print("  Station: %s" % db.header.station)
+        print("  Stokes Parameters: %s" % db.header.stokesParams)
+        print("  Image Size: %i by %i with %.3f deg/px" % (db.header.xSize, db.header.ySize, db.header.xPixelSize))
+        print("  Number of Integrations: %i" % db.nIntegrations)
         
         ## Report - first image
         db.seek(0)
@@ -79,11 +85,11 @@ def main(args):
         mjd = int(hdr.startTime)
         mpm = int((hdr.startTime - mjd)*86400*1000.0)
         tStart = mjdmpm2datetime(mjd, mpm)
-        print "    First Image:"
-        print "      Start Time: %s" % tStart.strftime("%Y/%m/%d %H:%M:%S.%f")
-        print "      Integration Time: %.3f s" % (hdr.intLen*86400.0,)
-        print "      Tuning: %.3f MHz" % (hdr.freq/1e6,)
-        print "      Bandwidth: %.3f kHz" % (hdr.bandwidth/1e3,)
+        print("    First Image:")
+        print("      Start Time: %s" % tStart.strftime("%Y/%m/%d %H:%M:%S.%f"))
+        print("      Integration Time: %.3f s" % (hdr.intLen*86400.0,))
+        print("      Tuning: %.3f MHz" % (hdr.freq/1e6,))
+        print("      Bandwidth: %.3f kHz" % (hdr.bandwidth/1e3,))
         
         ## Report - last image
         db.seek(db.nIntegrations-1)
@@ -91,14 +97,14 @@ def main(args):
         mjd = int(hdr.startTime)
         mpm = int((hdr.startTime - mjd)*86400*1000.0)
         tStart = mjdmpm2datetime(mjd, mpm)
-        print "    Last Image:"
-        print "      Start Time: %s" % tStart.strftime("%Y/%m/%d %H:%M:%S.%f")
-        print "      Integration Time: %.3f s" % (hdr.intLen*86400.0,)
-        print "      Tuning: %.3f MHz" % (hdr.freq/1e6,)
-        print "      Bandwidth: %.3f kHz" % (hdr.bandwidth/1e3,)
+        print("    Last Image:")
+        print("      Start Time: %s" % tStart.strftime("%Y/%m/%d %H:%M:%S.%f"))
+        print("      Integration Time: %.3f s" % (hdr.intLen*86400.0,))
+        print("      Tuning: %.3f MHz" % (hdr.freq/1e6,))
+        print("      Bandwidth: %.3f kHz" % (hdr.bandwidth/1e3,))
         
         ## Done
-        print " "
+        print(" ")
         db.close()
 
 

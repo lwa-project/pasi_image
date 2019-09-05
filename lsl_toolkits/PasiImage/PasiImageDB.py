@@ -4,12 +4,16 @@ This module provides the PasiImageDB class, which manages transactions
 with a binary file format that stores PASI images.
 """
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import sys
 import shutil
 import struct
-import cStringIO
-
 import construct
 import numpy as np
 
@@ -60,7 +64,7 @@ class PasiImageDB(object):
     _fileHeaderStructs = {
         'PasiImageDBv001': construct.Struct(
             'FileHeader',
-            construct.String('corrVersion', 16, None, '\x00'),
+            construct.String('corrVersion', 16, None, b'\x00'),
             construct.String('imagerVersion', 16, None, '\x00'),
             construct.String('station', 16, None, '\x00'),
             construct.String('stokesParams', 16, None, '\x00'),
@@ -247,7 +251,7 @@ class PasiImageDB(object):
                     raise RuntimeError('The file "%s" appears to be '
                                     'corrupted.' % fileName)
                 self.nIntegrations = \
-                    (fileSize - 16 - headerStruct.sizeof()) / intSize
+                    (fileSize - 16 - headerStruct.sizeof()) // intSize
                 
                 if mode == 'r+b':
                     self.file.seek(0, os.SEEK_END)

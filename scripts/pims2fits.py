@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# Python3 compatibility
+from __future__ import print_function, division, absolute_import
+import sys
+if sys.version_info > (3,):
+    xrange = range
+    
 import os
 import sys
 import numpy
@@ -14,7 +20,7 @@ from lsl_toolkits.PasiImage import PasiImageDB
 
 
 def usage(exitCode=None):
-    print """pims2fits.py - Convert the images contained in one or more .pims
+    print("""pims2fits.py - Convert the images contained in one or more .pims
 files into FITS images.
 
 Usage:  pims2fits.py [OPTIONS] file [file [...]]
@@ -23,7 +29,7 @@ Options:
 -h, --help              Display this help information
 -f, --force             Force overwriting of FITS files
 -v, --verbose           Be verbose during the conversion
-"""
+""")
     
     if exitCode is not None:
         sys.exit(exitCode)
@@ -43,7 +49,7 @@ def parseOptions(args):
         opts, args = getopt.getopt(args, "hfv", ["help", "force", "verbose"])
     except getopt.GetoptError, err:
         # Print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
+        print(str(err)) # will print something like "option -a not recognized"
         usage(exitCode=2)
         
     # Work through opts
@@ -71,20 +77,20 @@ def main(args):
     
     # Loop over input .pims files
     for filename in filenames:
-        print "Working on '%s'..." % os.path.basename(filename)
+        print("Working on '%s'..." % os.path.basename(filename))
         
         ## Open the image database
         try:
             db = PasiImageDB(filename, mode='r')
         except Exception as e:
-            print "ERROR: %s" % str(e)
+            print("ERROR: %s" % str(e))
             continue
             
         ##  Loop over the images contained in it
         fitsCounter = 0
         for i,(header,data,spec) in enumerate(db):
             if config['verbose']:
-                print "  working on integration #%i" % (i+1)
+                print("  working on integration #%i" % (i+1))
                 
             ## Reverse the axis order so we can get it right in the FITS file
             data = numpy.transpose(data, [0,2,1])
@@ -110,10 +116,10 @@ def main(args):
             dateObs = mjdmpm2datetime(mjd, mpm)
             dateEnd = dateObs + timedelta(seconds=int(tInt), microseconds=int((tInt-int(tInt))*1000000))
             if config['verbose']:
-                print "    start time: %s" % dateObs
-                print "    end time: %s" % dateEnd
-                print "    integration time: %.3f s" % tInt
-                print "    frequency: %.3f MHz" % header['freq']
+                print("    start time: %s" % dateObs)
+                print("    end time: %s" % dateEnd)
+                print("    integration time: %.3f s" % tInt)
+                print("    frequency: %.3f MHz" % header['freq'])
                 
             ## Create the FITS HDU and fill in the header information
             hdu = pyfits.PrimaryHDU(data=data)
@@ -160,7 +166,7 @@ def main(args):
         db.close()
         
         ## Report
-        print "-> wrote %i FITS files" % fitsCounter
+        print("-> wrote %i FITS files" % fitsCounter)
 
 
 if __name__ == "__main__":
