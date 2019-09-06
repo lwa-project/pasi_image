@@ -123,8 +123,8 @@ if __name__ == "__main__":
                         help='filename to convert')
     parser.add_argument('-f', '--force', action='store_true',
                         help='force overwriting of FITS files')
-    parser.add_argment('-v', '--verbose', action='store_true',
-                       help='be verbose during the conversion')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='be verbose during the conversion')
     args = parser.parse_args()
     main(args)
     
