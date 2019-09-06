@@ -9,60 +9,16 @@ if sys.version_info > (3,):
     
 import os
 import sys
-import getopt
+import argparse
 
 from lsl.common.mcs import mjdmpm2datetime
 
 from lsl_toolkits.PasiImage import PasiImageDB
 
 
-def usage(exitCode=None):
-    print("""summarizePASIImage.py - Print metadata about a PASI .pims file
-
-Usage:  summarizePASIImage.py [OPTIONS] file [file [...]]
-
-Options:
--h, --help              Display this help information
-""")
-    
-    if exitCode is not None:
-        sys.exit(exitCode)
-    else:
-        return True
-
-
-def parseOptions(args):
-    # Build up the configuration
-    config = {}
-    
-    # Read in and process the command line flags
-    try:
-        opts, args = getopt.getopt(args, "h", ["help",])
-    except getopt.GetoptError, err:
-        # Print help information and exit:
-        print(str(err)) # will print something like "option -a not recognized"
-        usage(exitCode=2)
-        
-    # Work through opts
-    for opt, value in opts:
-        if opt in ('-h', '--help'):
-            usage(exitCode=0)
-        else:
-            assert False
-            
-    # Add in arguments
-    config['args'] = args
-    
-    # Return configuration
-    return config
-
-
 def main(args):
-    config = parseOptions(args)
-    filenames = config['args']
-    
     # Loop over the input files
-    for filename in filenames:
+    for filename in args.filename:
         ## Is this file valid?
         try:
             db = PasiImageDB(filename, 'r')
@@ -109,6 +65,12 @@ def main(args):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
-    
+    parser = argparse.ArgumentParser(
+        description='print metadata about a PASI .pims file',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+    parser.add_argument('filename', type=str, nargs='+',
+                        help='filename to read')
+    args = parser.parse_args()
+    main(args)
     

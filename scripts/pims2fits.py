@@ -10,8 +10,8 @@ if sys.version_info > (3,):
 import os
 import sys
 import numpy
-import getopt
 import pyfits
+import argparse
 from datetime import datetime, timedelta
 
 from lsl.common.mcs import mjdmpm2datetime
@@ -19,64 +19,9 @@ from lsl.common.mcs import mjdmpm2datetime
 from lsl_toolkits.PasiImage import PasiImageDB
 
 
-def usage(exitCode=None):
-    print("""pims2fits.py - Convert the images contained in one or more .pims
-files into FITS images.
-
-Usage:  pims2fits.py [OPTIONS] file [file [...]]
-
-Options:
--h, --help              Display this help information
--f, --force             Force overwriting of FITS files
--v, --verbose           Be verbose during the conversion
-""")
-    
-    if exitCode is not None:
-        sys.exit(exitCode)
-    else:
-        return True
-
-
-def parseOptions(args):
-    # Build up the configuration
-    config = {}
-    config['force'] = False
-    config['verbose'] = False
-    config['args'] = []
-    
-    # Read in and process the command line flags
-    try:
-        opts, args = getopt.getopt(args, "hfv", ["help", "force", "verbose"])
-    except getopt.GetoptError, err:
-        # Print help information and exit:
-        print(str(err)) # will print something like "option -a not recognized"
-        usage(exitCode=2)
-        
-    # Work through opts
-    for opt, value in opts:
-        if opt in ('-h', '--help'):
-            usage(exitCode=0)
-        elif opt in ('-f', '--force'):
-            config['force'] = True
-        elif opt in ('-v', '--verbose'):
-            config['verbose'] = True
-        else:
-            assert False
-            
-    # Add in arguments
-    config['args'] = args
-    
-    # Return configuration
-    return config
-
-
 def main(args):
-    # Parse the command line
-    config = parseOptions(args)
-    filenames = config['args']
-    
     # Loop over input .pims files
-    for filename in filenames:
+    for filename in args.filename:
         print("Working on '%s'..." % os.path.basename(filename))
         
         ## Open the image database
@@ -89,7 +34,7 @@ def main(args):
         ##  Loop over the images contained in it
         fitsCounter = 0
         for i,(header,data,spec) in enumerate(db):
-            if config['verbose']:
+            if args.verbose:
                 print("  working on integration #%i" % (i+1))
                 
             ## Reverse the axis order so we can get it right in the FITS file
@@ -115,7 +60,7 @@ def main(args):
             tInt = header['intLen']*86400.0
             dateObs = mjdmpm2datetime(mjd, mpm)
             dateEnd = dateObs + timedelta(seconds=int(tInt), microseconds=int((tInt-int(tInt))*1000000))
-            if config['verbose']:
+            if args.verbose:
                 print("    start time: %s" % dateObs)
                 print("    end time: %s" % dateEnd)
                 print("    integration time: %.3f s" % tInt)
@@ -157,7 +102,7 @@ def main(args):
             ## Write it to disk
             outName = "pasi_%.3fMHz_%s.fits" % (header['freq']/1e6, dateObs.strftime("%Y-%m-%dT%H-%M-%S"))
             hdulist = pyfits.HDUList([hdu,])
-            hdulist.writeto(outName, clobber=config['force'])
+            hdulist.writeto(outName, clobber=args.force)
             
             ## Update the counter
             fitsCounter += 1
@@ -170,5 +115,16 @@ def main(args):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(
+        description='convert the images contained in one or more .pims files into FITS images',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+    parser.add_argument('filename', type=str, nargs='+',
+                        help='filename to convert')
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='force overwriting of FITS files')
+    parser.add_argment('-v', '--verbose', action='store_true',
+                       help='be verbose during the conversion')
+    args = parser.parse_args()
+    main(args)
     

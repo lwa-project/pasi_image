@@ -10,7 +10,7 @@ if sys.version_info > (3,):
 import os
 import sys
 import numpy
-import getopt
+import argparse
 
 from lsl.common.mcs import mjdmpm2datetime
 from lsl.common.stations import lwa1
@@ -24,66 +24,9 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import NullFormatter
 
 
-def usage(exitCode=None):
-    print("""imagePASI.py - Display images in a PASI .pims file
-
-Usage:  imagePASI.py [OPTIONS] file [file [...]]
-
-Options:
--h, --help              Display this help information
--s, --dataset           Data set to image (Default = All)
--n, --no-labels         Disable source and grid labels
--g, --no-grid           Disable the RA/Dec grid
-""")
-    
-    if exitCode is not None:
-        sys.exit(exitCode)
-    else:
-        return True
-
-
-def parseOptions(args):
-    # Build up the configuration
-    config = {}
-    config['dataset'] = 0
-    config['label'] = True
-    config['grid'] = True
-    config['args'] = []
-    
-    # Read in and process the command line flags
-    try:
-        opts, args = getopt.getopt(args, "hs:ng", ["help", "dataset=", "no-labels", "no-grid"])
-    except getopt.GetoptError, err:
-        # Print help information and exit:
-        print(str(err)) # will print something like "option -a not recognized"
-        usage(exitCode=2)
-        
-    # Work through opts
-    for opt, value in opts:
-        if opt in ('-h', '--help'):
-            usage(exitCode=0)
-        elif opt in ('-s', '--dataset'):
-            config['dataset'] = int(value)
-        elif opt in ('-n', '--no-labels'):
-            config['label'] = False
-        elif opt in ('-g', '--no-grid'):
-            config['grid'] = False
-        else:
-            assert False
-            
-    # Add in arguments
-    config['args'] = args
-    
-    # Return configuration
-    return config
-
-
 def main(args):
-    config = parseOptions(args)
-    filenames = config['args']
-    
     # Loop over the input files
-    for filename in filenames:
+    for filename in args.filename:
         ## Is this file valid?
         try:
             db = PasiImageDB(filename, 'r')
@@ -99,7 +42,7 @@ def main(args):
             
         ## Go!
         for i,(hdr,img,spec) in enumerate(db):
-            if config['dataset'] != 0 and config['dataset'] != (i+1):
+            if args.dataset != 0 and args.dataset != (i+1):
                 continue
                 
             mjd = int(hdr.startTime)
@@ -148,10 +91,10 @@ def main(args):
                     # Horizon
                     overlay.horizon(ax, aa)
                     # RA/Dec graticle
-                    if config['grid']:
+                    if not args.no_grid:
                         overlay.graticleRADec(ax, aa)
                     # Source positions
-                    overlay.sources(ax, aa, simVis.srcs, label=config['label'])
+                    overlay.sources(ax, aa, simVis.srcs, label=(not args.no_labels))
                     
             fig.suptitle('%.3f MHz @ %s' % (hdr.freq/1e6, tStart.strftime("%Y/%m/%d %H:%M:%S")))
             plt.show()
@@ -162,5 +105,18 @@ def main(args):
 
 if __name__ == "__main__":
     numpy.seterr(all='ignore')
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(
+        description='display images in a PASI .pims file',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+    parser.add_argument('filename', type=str, nargs='+',
+                        help='filename to display')
+    parser.add_argument('-s', '--dataset', type=int, default=0,
+                        help='daata set to image (one-based; 0 = all)')
+    parser.add_argument('-n', '--no-labels', action='store_true',
+                        help='disable source and grid labels')
+    parser.add_argument('-g', '--no-grid', action='store_true',
+                        help='disable the RA/Dec grid')
+    args = parser.parse_args()
+    main(args)
     
