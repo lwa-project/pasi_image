@@ -17,6 +17,10 @@ import struct
 import construct
 import numpy as np
 
+__version__ = '0.1'
+__revision__ = '$Rev$'
+__all__ = ['PasiImageDB',]
+
 
 class PasiImageDB(object):
     """
