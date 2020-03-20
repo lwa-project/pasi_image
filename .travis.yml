@@ -17,6 +17,7 @@ addons:
             - python3-dev
             - libfftw3-dev
             - libgdbm-dev
+            - libatlas-base-dev
 
 script:
     - sudo pip --no-cache-dir install \
