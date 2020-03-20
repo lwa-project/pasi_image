@@ -29,8 +29,8 @@ script:
         codecov
     - sudo pip install \ 
         lsl==1.2.5
-    - python setup.py build
-    - python setup.py test
+    - sudo python setup.py build
+    - sudo python setup.py test
 
 after_success:
     - cd tests
