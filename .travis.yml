@@ -22,16 +22,13 @@ addons:
 script:
     - sudo pip --no-cache-dir install \
         setuptools \
-        numpy \
-        matplotlib \
-        scipy \
-        pylint \
+        numpy==1.13.3 \
+        matplotlib==2.1.1 \
+        scipy==0.19.1 \
         coveralls \
         codecov
     - sudo pip --no-cache-dir install \
-        aipy \
-        pyephem \
-        lsl
+        lsl==1.2.5
     - python setup.py build
     - python setup.py test
 
