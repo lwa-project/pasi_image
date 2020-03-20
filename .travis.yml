@@ -31,9 +31,9 @@ script:
         lsl==1.2.5
     - sudo python setup.py build
     - sudo python setup.py test
+    - sudo coverage run --source=lsl setup.py test
 
 after_success:
-    - cd tests
     - coveralls
     - codecov
 
