@@ -31,9 +31,11 @@ script:
         lsl==1.2.5
     - sudo python setup.py build
     - sudo python setup.py test
-    - sudo coverage run --source=lsl setup.py test
+    - sudo python setup.py install
+    - cd tests && sudo coverage run --source=lsl_toolkits.PasiImage -m unittest discover
 
 after_success:
+    - cd tests
     - coveralls
     - codecov
 
