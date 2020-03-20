@@ -26,7 +26,8 @@ script:
         matplotlib==2.1.1 \
         scipy==0.19.1 \
         coveralls \
-        codecov \ 
+        codecov
+    - sudo pip --no-cache-dir install \ 
         lsl==1.2.5
     - python setup.py build
     - python setup.py test
@@ -35,3 +36,7 @@ after_success:
     - cd tests
     - coveralls
     - codecov
+
+cache:
+  directories:
+    - $HOME/.cache/pip
