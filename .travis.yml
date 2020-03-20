@@ -32,10 +32,9 @@ script:
     - sudo python setup.py build
     - sudo python setup.py test
     - sudo python setup.py install
-    - cd tests && sudo coverage run --source=lsl_toolkits.PasiImage -m unittest discover
+    - sudo coverage run --source=lsl_toolkits.PasiImage -m unittest discover tests
 
 after_success:
-    - cd tests
     - coveralls
     - codecov
 
