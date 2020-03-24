@@ -179,9 +179,9 @@ class PasiImageDB(object):
         self.file = None
         self.iIntegration = -1
         
-        self._FileHeader = self._fileHeaderStructs[self._currentVersionFormat]
-        self._IntHeader = self._intHeaderStructs[self._currentVersionFormat]
-        self._TimeOffsets = self._timeOffsets[self._currentVersionFormat]
+        self._FileHeader = self._fileHeaderStructs[self._currentFormatVersion]
+        self._IntHeader = self._intHeaderStructs[self._currentFormatVersion]
+        self._TimeOffsets = self._timeOffsets[self._currentFormatVersion]
         
         # For read mode, we do not create a new file.  Raise an error if it
         # does not exist, and create an empty PasiImageDB object if its length
@@ -193,7 +193,7 @@ class PasiImageDB(object):
                             % fileName)
             fileSize = os.path.getsize(fileName)
             if fileSize == 0:
-                self.version = self._currentVersionFormat
+                self.version = self._currentFormatVersion
                 self.header = self._FileHeader()
                 self.iIntegration = 0
                 self.nIntegrations = 0
