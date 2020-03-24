@@ -27,6 +27,9 @@ class _PrintableLittleEndianStructure(ctypes.LittleEndianStructure):
     method for accessing all of the fields as a dictionary.
     """
     
+    def sizeof(self):
+        return ctypes.sizeof(self)
+        
     def as_dict(self):
         """
         Return all of the structure fields as a dictionary.
@@ -254,7 +257,7 @@ class PasiImageDB(object):
                 intSize = ctypes.sizeof(intHeader) + \
                     4 * (self.header.nSpecChans +
                         self.nStokes * self.header.xSize * self.header.ySize)
-                if (fileSize - 16 - ctypes.sizeof(self.header) % intSize != 0:
+                if (fileSize - 16 - ctypes.sizeof(self.header)) % intSize != 0:
                     raise RuntimeError('The file "%s" appears to be '
                                     'corrupted.' % fileName)
                 self.nIntegrations = \
