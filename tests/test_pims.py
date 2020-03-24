@@ -73,8 +73,8 @@ class pims_tests(unittest.TestCase):
         
         db = PasiImage.PasiImageDB(pimsFile, 'r')
         nf = PasiImage.PasiImageDB(testFile, 'w', corrVersion=db.header.corrVersion, 
-                                            imagerVersion=db.header.imagerVersion, 
-                                            station=db.header.station)
+                                                  imagerVersion=db.header.imagerVersion, 
+                                                  station=db.header.station)
                                             
         # Fill it
         for rec in db:

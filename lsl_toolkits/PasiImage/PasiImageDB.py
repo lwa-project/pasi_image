@@ -27,6 +27,21 @@ class _PrintableLittleEndianStructure(ctypes.LittleEndianStructure):
     method for accessing all of the fields as a dictionary.
     """
     
+    def __getitem__(self, key):
+        value = getattr(self, key, None)
+        if value is None:
+            raise KeyError("Cannot find key '%s'" % key)
+        return value
+        
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+        
+    def keys(self):
+        return [field[0] for field in self._fields_]
+        
+    def __contains__(self, value):
+        return value in self.keys()
+        
     def sizeof(self):
         return ctypes.sizeof(self)
         
@@ -165,7 +180,7 @@ class PasiImageDB(object):
                     'PasiImageDBv003': 256 }
     
     def __init__(self, fileName, mode = 'r',
-                corrVersion = '', imagerVersion = '', station = ''):
+                 corrVersion = '', imagerVersion = '', station = ''):
         """
         Constructs a new PasiImageDB.
         
@@ -236,7 +251,7 @@ class PasiImageDB(object):
             self._TimeOffsets = self._timeOffsets[self.version]
             headerStruct = self._FileHeader()
             
-            if mode != 'r' and fileSize <= 16 + ctypes.sizeof(headerStruct):
+            if mode != 'r' and fileSize <= 16 + headerStruct.sizeof():
                 # If the file is too short to have any data in it, close it
                 # and start a new one.  This one is probably corrupt.
                 self.file.close()
@@ -254,14 +269,14 @@ class PasiImageDB(object):
                 self.nStokes = len(self.header.stokesParams.split(','))
                 
                 intHeader = self._IntHeader()
-                intSize = ctypes.sizeof(intHeader) + \
+                intSize = intHeader.sizeof() + \
                     4 * (self.header.nSpecChans +
                         self.nStokes * self.header.xSize * self.header.ySize)
-                if (fileSize - 16 - ctypes.sizeof(self.header)) % intSize != 0:
+                if (fileSize - 16 - self.header.sizeof()) % intSize != 0:
                     raise RuntimeError('The file "%s" appears to be '
                                     'corrupted.' % fileName)
                 self.nIntegrations = \
-                    (fileSize - 16 - ctypes.sizeof(self.header)) // intSize
+                    (fileSize - 16 - self.header.sizeof()) // intSize
                 
                 if mode == 'r+b':
                     self.file.seek(0, os.SEEK_END)
@@ -275,6 +290,9 @@ class PasiImageDB(object):
             # (e.g., resolution) that isn't yet available.
             self.version = self._currentFormatVersion
             self.header = self._FileHeader()
+            self.header.corrVersion = corrVersion
+            self.header.imagerVersion = imagerVersion
+            self.header.station = station
             self.header.flags = self.flagSorted
             self.nIntegrations = 0
     
@@ -320,11 +338,11 @@ class PasiImageDB(object):
                             (index, self.nIntegrations))
         if self.iIntegration != index:
             intHeader = self._IntHeader()
-            intSize = ctypes.sizeof(intHeader) + \
+            intSize = intHeader.sizeof() + \
                 4 * (self.header.nSpecChans +
                     self.nStokes * self.header.xSize * self.header.ySize)
             fileHeader = self._FileHeader()
-            headerSize = 16 + ctypes.sizeof(fileHeader)
+            headerSize = 16 + fileHeader.sizeof()
             self.file.seek(headerSize + intSize * index, os.SEEK_SET)
             self.iIntegration = index
     
@@ -354,8 +372,8 @@ class PasiImageDB(object):
             self.header.yPixelSize   = yPixelSize
             self.header.nSpecChans   = nSpecChans
             self.file.write(struct.pack('16s', self.version))
-            headerStruct = self._fileHeaderStructs[self.version]
-            headerStruct.build_stream(self.header, self.file)
+            headerStruct = self._fileHeaderStructs[self.version]()
+            self.file.write(headerStruct)
             self.nStokes = len(self.header.stokesParams.split(','))
             self._isNewFile = False
         
@@ -454,7 +472,7 @@ class PasiImageDB(object):
         # Write it out.
         intHeader = self._IntHeader()
         for key in info.keys():
-            if key not in [field[0] for field in intHeader]:
+            if key not in intHeader.keys():
                 continue
             setattr(intHeader, key, info[key])
         self.file.write(intHeader)
@@ -528,7 +546,7 @@ class PasiImageDB(object):
         
         # Read the entire input database into memory.
         inIntHeaderStruct = PasiImageDB._intHeaderStructs[inDB.version]()
-        headerSize = ctypes.sizeof(inIntHeaderStruct)
+        headerSize = inIntHeaderStruct.sizeof()
         dataSize = 4 * (inDB.header.nSpecChans +
                         inDB.nStokes * inDB.header.xSize * inDB.header.ySize)
         intSize = headerSize + dataSize
