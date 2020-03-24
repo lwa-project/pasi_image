@@ -18,7 +18,6 @@ REQUIREMENTS
 ------------
   * python >= 2.6 and python < 3.0
   * numpy >= 1.2
-  * construct >= 2.5.2, <2.8
   * lsl >= 1.1.0 (required for some of the scripts)
   * matplotlib >= 0.98.3 (required for some of the scripts)
   * pyfits >= 3.1 (required for some of the scripts)
