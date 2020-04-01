@@ -9,7 +9,7 @@ if sys.version_info > (3,):
 import os
 import sys
 import numpy
-import pyfits
+import astro.fits.io as astrofits
 import argparse
 from datetime import datetime, timedelta
 
@@ -66,7 +66,7 @@ def main(args):
                 print("    frequency: %.3f MHz" % header['freq'])
                 
             ## Create the FITS HDU and fill in the header information
-            hdu = pyfits.PrimaryHDU(data=data)
+            hdu = astrofits.PrimaryHDU(data=data)
             hdu.header['TELESCOP'] = 'LWA1'
             ### Date and time
             hdu.header['DATE-OBS'] = dateObs.strftime("%Y-%m-%dT%H:%M:%S")
@@ -100,7 +100,7 @@ def main(args):
             
             ## Write it to disk
             outName = "pasi_%.3fMHz_%s.fits" % (header['freq']/1e6, dateObs.strftime("%Y-%m-%dT%H-%M-%S"))
-            hdulist = pyfits.HDUList([hdu,])
+            hdulist = astrofits.HDUList([hdu,])
             hdulist.writeto(outName, clobber=args.force)
             
             ## Update the counter

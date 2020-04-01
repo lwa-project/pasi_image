@@ -93,7 +93,7 @@ def main(args):
                     if not args.no_grid:
                         overlay.graticule_radec(ax, aa)
                     # Source positions
-                    overlay.sources(ax, aa, simVis.srcs, label=(not args.no_labels))
+                    overlay.sources(ax, aa, simVis.SOURCES, label=(not args.no_labels))
                     
             fig.suptitle('%.3f MHz @ %s' % (hdr.freq/1e6, tStart.strftime("%Y/%m/%d %H:%M:%S")))
             plt.show()
