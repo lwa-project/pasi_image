@@ -9,7 +9,7 @@ if sys.version_info > (3,):
 import os
 import sys
 import numpy
-import astro.fits.io as astrofits
+from astropy.io import fits as astrofits
 import argparse
 from datetime import datetime, timedelta
 
