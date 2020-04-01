@@ -241,7 +241,7 @@ class PasiImageDB(object):
         if not self._isNewFile:
             # For existing files, get the number of iterations from the file
             # length, and read the format version and file header.
-            self.version = self.file.read(16).rstrip('\x00')
+            self.version = self.file.read(16).rstrip(b'\x00')
             if self.version not in self._fileHeaderStructs:
                 raise KeyError('The file "%s" does not appear to be a '
                             'PasiImageDB file.  Initial string: "%s"' %
