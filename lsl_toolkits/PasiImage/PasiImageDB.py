@@ -263,7 +263,7 @@ class PasiImageDB(object):
                 # It looks like we should have a good header, at least ....
                 self.header = self._FileHeader()
                 self.file.readinto(self.header)
-                if self.version < 'PasiImageDBv002':
+                if self.version < b'PasiImageDBv002':
                     self.header.xPixelSize = 1.0  # Default to 1 deg/pix.
                     self.header.yPixelSize = 1.0
                 self.nStokes = len(self.header.stokesParams.split(','))
