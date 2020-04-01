@@ -266,7 +266,7 @@ class PasiImageDB(object):
                 if self.version < b'PasiImageDBv002':
                     self.header.xPixelSize = 1.0  # Default to 1 deg/pix.
                     self.header.yPixelSize = 1.0
-                self.nStokes = len(self.header.stokesParams.split(','))
+                self.nStokes = len(self.header.stokesParams.split(b','))
                 
                 intHeader = self._IntHeader()
                 intSize = intHeader.sizeof() + \
@@ -374,7 +374,7 @@ class PasiImageDB(object):
             self.file.write(struct.pack('16s', self.version))
             headerStruct = self._fileHeaderStructs[self.version]()
             self.file.write(headerStruct)
-            self.nStokes = len(self.header.stokesParams.split(','))
+            self.nStokes = len(self.header.stokesParams.split(b','))
             self._isNewFile = False
         
         else:
