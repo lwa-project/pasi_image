@@ -46,7 +46,7 @@ class pims_tests(unittest.TestCase):
         # Read in the first image with the correct number of elements
         hdr, data, spec = db.readImage()
         ## Image
-        self.assertEqual(data.shape[0], len(db.header.stokesParams.split(',')))
+        self.assertEqual(data.shape[0], len(db.header.stokesParams.split(b',')))
         self.assertEqual(data.shape[1], db.header.xSize)
         self.assertEqual(data.shape[2], db.header.ySize)
         ## Spectra

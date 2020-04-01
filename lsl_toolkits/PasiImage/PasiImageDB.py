@@ -592,16 +592,23 @@ class PasiImageDB(object):
     # Implement some built-ins to make reading images more "Pythonic" ...
     def __len__(self):
         return self.nIntegrations
-    
+        
+        
     def __getitem__(self, index):
         self.seek(index)
         return self.readImage()
-    
+        
+        
     def __iter__(self):
         return self
-    
-    def next(self):
+        
+        
+    def __next__(self):
         if self.iIntegration >= self.nIntegrations:
             raise StopIteration
         else:
             return self.readImage()
+            
+            
+    def next(self):
+        return self.__next__()
