@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # Python3 compatibility
 from __future__ import print_function, division, absolute_import
@@ -12,7 +11,7 @@ import sys
 import numpy
 import argparse
 
-from lsl.common.mcs import mjdmpm2datetime
+from lsl.common.mcs import mjdmpm_to_datetime
 from lsl.common.stations import lwa1
 from lsl.sim import vis as simVis
 from lsl.imaging import overlay
@@ -36,7 +35,7 @@ def main(args):
             
         ## Setup the array
         if db.header.station == 'LWA1':
-            aa = simVis.buildSimArray(lwa1, lwa1.getAntennas()[0::2], numpy.array([38e6,]))
+            aa = simVis.build_sim_array(lwa1, lwa1.antennas[0::2], numpy.array([38e6,]))
         else:
             aa = None
             
@@ -47,7 +46,7 @@ def main(args):
                 
             mjd = int(hdr.startTime)
             mpm = int((hdr.startTime - mjd)*86400*1000.0)
-            tStart = mjdmpm2datetime(mjd, mpm)
+            tStart = mjdmpm_to_datetime(mjd, mpm)
             if aa is not None:
                 aa.set_jultime(hdr.centroidTime + astro.MJD_OFFSET)
                 
@@ -92,7 +91,7 @@ def main(args):
                     overlay.horizon(ax, aa)
                     # RA/Dec graticle
                     if not args.no_grid:
-                        overlay.graticleRADec(ax, aa)
+                        overlay.graticule_radec(ax, aa)
                     # Source positions
                     overlay.sources(ax, aa, simVis.srcs, label=(not args.no_labels))
                     

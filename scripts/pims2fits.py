@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # Python3 compatibility
 from __future__ import print_function, division, absolute_import
@@ -14,7 +13,7 @@ import pyfits
 import argparse
 from datetime import datetime, timedelta
 
-from lsl.common.mcs import mjdmpm2datetime
+from lsl.common.mcs import mjdmpm_to_datetime
 
 from lsl_toolkits.PasiImage import PasiImageDB
 
@@ -58,7 +57,7 @@ def main(args):
             mjd = int(header['startTime'])
             mpm = int((header['startTime'] - mjd)*86400.0*1000.0)
             tInt = header['intLen']*86400.0
-            dateObs = mjdmpm2datetime(mjd, mpm)
+            dateObs = mjdmpm_to_datetime(mjd, mpm)
             dateEnd = dateObs + timedelta(seconds=int(tInt), microseconds=int((tInt-int(tInt))*1000000))
             if args.verbose:
                 print("    start time: %s" % dateObs)
