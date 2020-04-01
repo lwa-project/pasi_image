@@ -161,23 +161,23 @@ class PasiImageDB(object):
     # (including RA) and pixel sizes are in degrees.  All other entries are in
     # standard mks units.
     
-    _currentFormatVersion = 'PasiImageDBv003'
+    _currentFormatVersion = b'PasiImageDBv003'
     
     _fileHeaderStructs = {
-        'PasiImageDBv001': _PasiImageDBv001_FileHeader,
-        'PasiImageDBv002': _PasiImageDBv002_FileHeader,
-        'PasiImageDBv003': _PasiImageDBv003_FileHeader,
+        b'PasiImageDBv001': _PasiImageDBv001_FileHeader,
+        b'PasiImageDBv002': _PasiImageDBv002_FileHeader,
+        b'PasiImageDBv003': _PasiImageDBv003_FileHeader,
         }
     flagSorted = 0x0001
     
     _intHeaderStructs = {
-        'PasiImageDBv001': _PasiImageDBv001_IntHeader,
-        'PasiImageDBv002': _PasiImageDBv002_IntHeader,
-        'PasiImageDBv003': _PasiImageDBv003_IntHeader
+        b'PasiImageDBv001': _PasiImageDBv001_IntHeader,
+        b'PasiImageDBv002': _PasiImageDBv002_IntHeader,
+        b'PasiImageDBv003': _PasiImageDBv003_IntHeader
         }
-    _timeOffsets = {'PasiImageDBv001': 256,
-                    'PasiImageDBv002': 256,
-                    'PasiImageDBv003': 256 }
+    _timeOffsets = {b'PasiImageDBv001': 256,
+                    b'PasiImageDBv002': 256,
+                    b'PasiImageDBv003': 256 }
     
     def __init__(self, fileName, mode = 'r',
                  corrVersion = '', imagerVersion = '', station = ''):
