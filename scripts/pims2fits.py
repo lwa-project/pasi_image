@@ -101,7 +101,7 @@ def main(args):
             ## Write it to disk
             outName = "pasi_%.3fMHz_%s.fits" % (header['freq']/1e6, dateObs.strftime("%Y-%m-%dT%H-%M-%S"))
             hdulist = astrofits.HDUList([hdu,])
-            hdulist.writeto(outName, clobber=args.force)
+            hdulist.writeto(outName, overwrite=args.force)
             
             ## Update the counter
             fitsCounter += 1
