@@ -1,9 +1,7 @@
 LSL Toolkit for Images Created by the Prototype All-Sky Imager (PASI)
 =====================================================================
 
-[![Travis](https://travis-ci.org/lwa-project/pasi_image.svg?branch=master)](https://travis-ci.org/lwa-project/pasi_image.svg?branch=master)
-
-[![Coverage Status](https://coveralls.io/repos/github/lwa-project/pasi_image/badge.svg?branch=master)](https://coveralls.io/github/lwa-project/pasi_image?branch=master)
+[![Travis](https://travis-ci.org/lwa-project/pasi_image.svg?branch=master)](https://travis-ci.org/lwa-project/pasi_image.svg?branch=master)  [![Coverage Status](https://coveralls.io/repos/github/lwa-project/pasi_image/badge.svg?branch=master)](https://coveralls.io/github/lwa-project/pasi_image?branch=master)
 
 ### [![Paper](https://img.shields.io/badge/arXiv-1503.05150-blue.svg)](https://arxiv.org/abs/1503.05150)
 
