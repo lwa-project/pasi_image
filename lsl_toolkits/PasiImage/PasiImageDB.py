@@ -1,14 +1,13 @@
-# -*- coding: utf-8 -*-
 """
 This module provides the PasiImageDB class, which manages transactions
 with a binary file format that stores PASI images.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import sys
@@ -561,7 +560,7 @@ class PasiImageDB(object):
         # Determine the sort order of those times.
         times = np.array([
                 struct.unpack_from('d', data, offset = i)[0] for i in
-                xrange(PasiImageDB._timeOffsets[inDB.version],
+                range(PasiImageDB._timeOffsets[inDB.version],
                     intSize * inDB.nIntegrations, intSize)])
         
         intOrder = times.argsort()
@@ -579,7 +578,7 @@ class PasiImageDB(object):
         outFile.write(struct.pack('16s', outVersion))
         outFile.write(inDB.header)
         
-        for iOut in xrange(inDB.nIntegrations):
+        for iOut in range(inDB.nIntegrations):
             i = intOrder[iOut] * intSize
             header = PasiImageDB._intHeaderStructs[outVersion]()
             ctypes.memmove(ctypes.addressof(header), data[i : i + headerSize], headerSize)
