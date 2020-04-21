@@ -55,16 +55,13 @@ def _test_generator(script):
     """
     
     def test(self):
-        out, err = lint.py_run("%s -E" % script, return_std=True)
+        out, err = lint.py_run("%s -E --extension-pkg-whitelist=numpy" % script, return_std=True)
         out_lines = out.read().split('\n')
         err_lines = err.read().split('\n')
         out.close()
         err.close()
         
         for line in out_lines:
-            if line.find("Module 'numpy") != -1:
-                continue
-                
             mtch = _LINT_RE.match(line)
             if mtch is not None:
                 line_no, type, info = mtch.group('line'), mtch.group('type'), mtch.group('info')
