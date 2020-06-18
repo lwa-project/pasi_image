@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
-
 """
 Unit tests for the various USRP scripts.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import unittest
 import glob
@@ -21,6 +19,8 @@ currentDir = os.path.abspath(os.getcwd())
 if os.path.exists(os.path.join(currentDir, 'setup.py')) and os.path.exists(os.path.join(currentDir, 'lsl_toolkits')):
     modInfoBuild = imp.find_module('lsl_toolkits', [currentDir])
     MODULE_BUILD =  os.path.abspath(modInfoBuild[1])
+elif os.path.exists(os.path.join(currentDir, 'test_scripts.py')):
+    MODULE_BUILD = currentDir
 else:
     MODULE_BUILD = None
     
@@ -34,11 +34,10 @@ except ImportError:
 
 
 __version__  = "0.1"
-__revision__ = "$Rev$"
 __author__   = "Jayce Dowell"
 
 
-_LINT_RE = re.compile('(?P<module>.*?)\:(?P<line>\d+)\: \[(?P<type>.*?)\] (?P<info>.*)')
+_LINT_RE = re.compile('(?P<module>.*?)\:(?P<line>\d+)\: (error )?[\[\(](?P<type>.*?)[\]\)] (?P<info>.*)')
 
 
 @unittest.skipUnless(run_scripts_tests, "requires the 'pylint' module")
@@ -56,16 +55,13 @@ def _test_generator(script):
     """
     
     def test(self):
-        out, err = lint.py_run("%s -E --init-hook='import sys; sys.path=[%s]; sys.path.insert(0, \"%s\")'" % (script, ",".join(['"%s"' % p for p in sys.path]), os.path.dirname(MODULE_BUILD)), return_std=True)
+        out, err = lint.py_run("%s -E --extension-pkg-whitelist=numpy" % script, return_std=True)
         out_lines = out.read().split('\n')
         err_lines = err.read().split('\n')
         out.close()
         err.close()
         
         for line in out_lines:
-            if line.find("Module 'numpy") != -1:
-                continue
-                
             mtch = _LINT_RE.match(line)
             if mtch is not None:
                 line_no, type, info = mtch.group('line'), mtch.group('type'), mtch.group('info')
@@ -73,14 +69,15 @@ def _test_generator(script):
     return test
 
 
-_SCRIPTS = glob.glob(os.path.join(MODULE_BUILD, '..', 'scripts', '*.py'))
-_SCRIPTS.sort()
-for script in _SCRIPTS:
-    test = _test_generator(script)
-    name = 'test_%s' % os.path.splitext(os.path.basename(script))[0]
-    doc = """Static analysis of the '%s' script.""" % os.path.basename(script)
-    setattr(test, '__doc__', doc)
-    setattr(scripts_tests, name, test)
+if run_scripts_tests:
+    _SCRIPTS = glob.glob(os.path.join(MODULE_BUILD, '..', 'scripts', '*.py'))
+    _SCRIPTS.sort()
+    for script in _SCRIPTS:
+        test = _test_generator(script)
+        name = 'test_%s' % os.path.splitext(os.path.basename(script))[0]
+        doc = """Static analysis of the '%s' script.""" % os.path.basename(script)
+        setattr(test, '__doc__', doc)
+        setattr(scripts_tests, name, test)
 
 
 class scripts_test_suite(unittest.TestSuite):

@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
-
 """
 Unit test for lsl_toolkit.PasiImage module.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import numpy
@@ -18,7 +16,6 @@ import unittest
 from lsl_toolkits import PasiImage as PasiImage
 
 
-__revision__ = "$ Revision: 2 $"
 __version__  = "0.1"
 __author__    = "Jayce Dowell"
 
@@ -46,7 +43,7 @@ class pims_tests(unittest.TestCase):
         # Read in the first image with the correct number of elements
         hdr, data, spec = db.readImage()
         ## Image
-        self.assertEqual(data.shape[0], len(db.header.stokesParams.split(',')))
+        self.assertEqual(data.shape[0], len(db.header.stokesParams.split(b',')))
         self.assertEqual(data.shape[1], db.header.xSize)
         self.assertEqual(data.shape[2], db.header.ySize)
         ## Spectra
@@ -73,8 +70,8 @@ class pims_tests(unittest.TestCase):
         
         db = PasiImage.PasiImageDB(pimsFile, 'r')
         nf = PasiImage.PasiImageDB(testFile, 'w', corrVersion=db.header.corrVersion, 
-                                            imagerVersion=db.header.imagerVersion, 
-                                            station=db.header.station)
+                                                  imagerVersion=db.header.imagerVersion, 
+                                                  station=db.header.station)
                                             
         # Fill it
         for rec in db:
@@ -103,12 +100,12 @@ class pims_tests(unittest.TestCase):
         for attr in ('startTime', 'centroidTime', 'intLen', 'lst', 'freq', 'bandwidth', 'gain', 'fill', 'zenithRA', 'zenithDec', 'xPixelSize', 'yPixelSize'):
             self.assertAlmostEqual(getattr(hdr0, attr, None), getattr(hdr1, attr, None), 6)
         ### Image
-        for i in xrange(img0.shape[0]):
-            for j in xrange(img0.shape[1]):
-                for k in xrange(img0.shape[2]):
+        for i in range(img0.shape[0]):
+            for j in range(img0.shape[1]):
+                for k in range(img0.shape[2]):
                     self.assertAlmostEqual(img0[i,j,k], img1[i,j,k], 6)
         ### Spectra
-        for i in xrange(spec0.shape[0]):
+        for i in range(spec0.shape[0]):
             self.assertAlmostEqual(spec0[i], spec1[i], 6)
             
         db0.close()

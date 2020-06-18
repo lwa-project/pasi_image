@@ -1,25 +1,122 @@
-# -*- coding: utf-8 -*-
 """
 This module provides the PasiImageDB class, which manages transactions
 with a binary file format that stores PASI images.
 """
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 import sys
-if sys.version_info > (3,):
-    xrange = range
+if sys.version_info < (3,):
+    range = xrange
     
 import os
 import sys
+import ctypes
 import shutil
 import struct
-import construct
 import numpy as np
 
-__version__ = '0.1'
-__revision__ = '$Rev$'
+__version__ = '0.2'
 __all__ = ['PasiImageDB',]
+
+
+class _PrintableLittleEndianStructure(ctypes.LittleEndianStructure):
+    """
+    Sub-class of ctypes.LittleEndianStructure that adds a as_dict()
+    method for accessing all of the fields as a dictionary.
+    """
+    
+    def __getitem__(self, key):
+        value = getattr(self, key, None)
+        if value is None:
+            raise KeyError("Cannot find key '%s'" % key)
+        return value
+        
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+        
+    def keys(self):
+        return [field[0] for field in self._fields_]
+        
+    def __contains__(self, value):
+        return value in self.keys()
+        
+    def sizeof(self):
+        return ctypes.sizeof(self)
+        
+    def as_dict(self):
+        """
+        Return all of the structure fields as a dictionary.
+        """
+        
+        out = {}
+        for field in self._fields_:
+            out[field[0]] = getattr(self, field[0], None)
+        return out
+        
+    def __repr__(self):
+        return repr(self.as_dict())
+
+class _PasiImageDBv001_FileHeader(_PrintableLittleEndianStructure):
+    _pack_   = 1
+    _fields_ = [('corrVersion', ctypes.c_char*16),
+                ('imagerVersion', ctypes.c_char*16),
+                ('station', ctypes.c_char*16),
+                ('stokesParams', ctypes.c_char*16),
+                ('xSize', ctypes.c_uint),
+                ('ySize', ctypes.c_uint),
+                ('nSpecChans', ctypes.c_uint),
+                ('flags', ctypes.c_uint),
+                ('startTime', ctypes.c_double),
+                ('stopTime', ctypes.c_double)]
+
+class _PasiImageDBv002_FileHeader(_PrintableLittleEndianStructure):
+    _pack_   = 1
+    _fields_ = [('corrVersion', ctypes.c_char*16),
+                ('imagerVersion', ctypes.c_char*16),
+                ('station', ctypes.c_char*16),
+                ('stokesParams', ctypes.c_char*16),
+                ('xSize', ctypes.c_uint),
+                ('ySize', ctypes.c_uint),
+                ('nSpecChans', ctypes.c_uint),
+                ('flags', ctypes.c_uint),
+                ('xPixelSize', ctypes.c_double),
+                ('yPixelSize', ctypes.c_double),
+                ('startTime', ctypes.c_double),
+                ('stopTime', ctypes.c_double)]
+
+_PasiImageDBv003_FileHeader = _PasiImageDBv002_FileHeader
+
+class _PasiImageDBv001_IntHeader(_PrintableLittleEndianStructure):
+    _pack_   = 1
+    _fields_ = [('visFileName', ctypes.c_char*256),
+                ('startTime', ctypes.c_double),
+                ('centroidTime', ctypes.c_double),
+                ('intLen', ctypes.c_double),
+                ('lst', ctypes.c_double),
+                ('freq', ctypes.c_double),
+                ('bandwidth', ctypes.c_double),
+                ('gain', ctypes.c_double),
+                ('zenithRA', ctypes.c_double),
+                ('zenithDec', ctypes.c_double),
+                ('worldreplace0', ctypes.c_double*2)]
+
+_PasiImageDBv002_IntHeader = _PasiImageDBv001_IntHeader
+
+class _PasiImageDBv003_IntHeader(_PrintableLittleEndianStructure):
+    _pack_   = 1
+    _fields_ = [('visFileName', ctypes.c_char*256),
+                ('startTime', ctypes.c_double),
+                ('centroidTime', ctypes.c_double),
+                ('intLen', ctypes.c_double),
+                ('lst', ctypes.c_double),
+                ('freq', ctypes.c_double),
+                ('bandwidth', ctypes.c_double),
+                ('gain', ctypes.c_double),
+                ('fill', ctypes.c_double),
+                ('zenithRA', ctypes.c_double),
+                ('zenithDec', ctypes.c_double),
+                ('worldreplace0', ctypes.c_double*2)]
 
 
 class PasiImageDB(object):
@@ -63,100 +160,26 @@ class PasiImageDB(object):
     # (including RA) and pixel sizes are in degrees.  All other entries are in
     # standard mks units.
     
-    _currentFormatVersion = 'PasiImageDBv003'
+    _currentFormatVersion = b'PasiImageDBv003'
     
     _fileHeaderStructs = {
-        'PasiImageDBv001': construct.Struct(
-            'FileHeader',
-            construct.String('corrVersion', 16, None, b'\x00'),
-            construct.String('imagerVersion', 16, None, '\x00'),
-            construct.String('station', 16, None, '\x00'),
-            construct.String('stokesParams', 16, None, '\x00'),
-            construct.ULInt32('xSize'),
-            construct.ULInt32('ySize'),
-            construct.ULInt32('nSpecChans'),
-            construct.ULInt32('flags'),
-            construct.LFloat64('startTime'),
-            construct.LFloat64('stopTime')),
-        'PasiImageDBv002': construct.Struct(
-            'FileHeader',
-            construct.String('corrVersion', 16, None, '\x00'),
-            construct.String('imagerVersion', 16, None, '\x00'),
-            construct.String('station', 16, None, '\x00'),
-            construct.String('stokesParams', 16, None, '\x00'),
-            construct.ULInt32('xSize'),
-            construct.ULInt32('ySize'),
-            construct.ULInt32('nSpecChans'),
-            construct.ULInt32('flags'),
-            construct.LFloat64('xPixelSize'),
-            construct.LFloat64('yPixelSize'),
-            construct.LFloat64('startTime'),
-            construct.LFloat64('stopTime')),
-        'PasiImageDBv003': construct.Struct(
-            'FileHeader',
-            construct.String('corrVersion', 16, None, '\x00'),
-            construct.String('imagerVersion', 16, None, '\x00'),
-            construct.String('station', 16, None, '\x00'),
-            construct.String('stokesParams', 16, None, '\x00'),
-            construct.ULInt32('xSize'),
-            construct.ULInt32('ySize'),
-            construct.ULInt32('nSpecChans'),
-            construct.ULInt32('flags'),
-            construct.LFloat64('xPixelSize'),
-            construct.LFloat64('yPixelSize'),
-            construct.LFloat64('startTime'),
-            construct.LFloat64('stopTime')),
+        b'PasiImageDBv001': _PasiImageDBv001_FileHeader,
+        b'PasiImageDBv002': _PasiImageDBv002_FileHeader,
+        b'PasiImageDBv003': _PasiImageDBv003_FileHeader,
         }
     flagSorted = 0x0001
     
     _intHeaderStructs = {
-        'PasiImageDBv001': construct.Struct(
-            'IntHeader',
-            construct.String('visFileName', 256, None, '\x00'),
-            construct.LFloat64('startTime'),
-            construct.LFloat64('centroidTime'),
-            construct.LFloat64('intLen'),
-            construct.LFloat64('lst'),
-            construct.LFloat64('freq'),
-            construct.LFloat64('bandwidth'),
-            construct.LFloat64('gain'),
-            construct.LFloat64('zenithRA'),
-            construct.LFloat64('zenithDec'),
-            construct.Array(2, construct.LFloat64('worldreplace0'))),
-        'PasiImageDBv002': construct.Struct(
-            'IntHeader',
-            construct.String('visFileName', 256, None, '\x00'),
-            construct.LFloat64('startTime'),
-            construct.LFloat64('centroidTime'),
-            construct.LFloat64('intLen'),
-            construct.LFloat64('lst'),
-            construct.LFloat64('freq'),
-            construct.LFloat64('bandwidth'),
-            construct.LFloat64('gain'),
-            construct.LFloat64('zenithRA'),
-            construct.LFloat64('zenithDec'),
-            construct.Array(2, construct.LFloat64('worldreplace0'))),
-        'PasiImageDBv003': construct.Struct(
-            'IntHeader',
-            construct.String('visFileName', 256, None, '\x00'),
-            construct.LFloat64('startTime'),
-            construct.LFloat64('centroidTime'),
-            construct.LFloat64('intLen'),
-            construct.LFloat64('lst'),
-            construct.LFloat64('freq'),
-            construct.LFloat64('bandwidth'),
-            construct.LFloat64('gain'),
-            construct.LFloat64('fill'),
-            construct.LFloat64('zenithRA'),
-            construct.LFloat64('zenithDec'),
-            construct.Array(2, construct.LFloat64('worldreplace0'))),
+        b'PasiImageDBv001': _PasiImageDBv001_IntHeader,
+        b'PasiImageDBv002': _PasiImageDBv002_IntHeader,
+        b'PasiImageDBv003': _PasiImageDBv003_IntHeader
         }
-    _timeOffsets = { 'PasiImageDBv001': 256,
-                    'PasiImageDBv002': 256,
-                    'PasiImageDBv003': 256 }
+    _timeOffsets = {b'PasiImageDBv001': 256,
+                    b'PasiImageDBv002': 256,
+                    b'PasiImageDBv003': 256 }
     
     def __init__(self, fileName, mode = 'r',
-                corrVersion = '', imagerVersion = '', station = ''):
+                 corrVersion = '', imagerVersion = '', station = ''):
         """
         Constructs a new PasiImageDB.
         
@@ -170,6 +193,10 @@ class PasiImageDB(object):
         self.file = None
         self.iIntegration = -1
         
+        self._FileHeader = self._fileHeaderStructs[self._currentFormatVersion]
+        self._IntHeader = self._intHeaderStructs[self._currentFormatVersion]
+        self._TimeOffsets = self._timeOffsets[self._currentFormatVersion]
+        
         # For read mode, we do not create a new file.  Raise an error if it
         # does not exist, and create an empty PasiImageDB object if its length
         # is zero.
@@ -180,20 +207,8 @@ class PasiImageDB(object):
                             % fileName)
             fileSize = os.path.getsize(fileName)
             if fileSize == 0:
-                self.version = 'empty file'
-                self.header = construct.Container(
-                    corrVersion   = '',
-                    imagerVersion = '',
-                    station       = '',
-                    stokesParams  = '',
-                    xSize         = 0,
-                    ySize         = 0,
-                    nSpecChans    = 0,
-                    flags         = 0,
-                    xPixelSize    = 0.,
-                    yPixelSize    = 0.,
-                    startTime     = 0.,
-                    stopTime      = 0. )
+                self.version = self._currentFormatVersion
+                self.header = self._FileHeader()
                 self.iIntegration = 0
                 self.nIntegrations = 0
                 self.nStokes = 0
@@ -225,12 +240,15 @@ class PasiImageDB(object):
         if not self._isNewFile:
             # For existing files, get the number of iterations from the file
             # length, and read the format version and file header.
-            self.version = self.file.read(16).rstrip('\x00')
+            self.version = self.file.read(16).rstrip(b'\x00')
             if self.version not in self._fileHeaderStructs:
                 raise KeyError('The file "%s" does not appear to be a '
                             'PasiImageDB file.  Initial string: "%s"' %
                             (fileName, self.version))
-            headerStruct = self._fileHeaderStructs[self.version]
+            self._FileHeader = self._fileHeaderStructs[self.version]
+            self._IntHeader = self._intHeaderStructs[self.version]
+            self._TimeOffsets = self._timeOffsets[self.version]
+            headerStruct = self._FileHeader()
             
             if mode != 'r' and fileSize <= 16 + headerStruct.sizeof():
                 # If the file is too short to have any data in it, close it
@@ -242,20 +260,22 @@ class PasiImageDB(object):
             
             else:
                 # It looks like we should have a good header, at least ....
-                self.header = headerStruct.parse_stream(self.file)
-                if self.version < 'PasiImageDBv002':
+                self.header = self._FileHeader()
+                self.file.readinto(self.header)
+                if self.version < b'PasiImageDBv002':
                     self.header.xPixelSize = 1.0  # Default to 1 deg/pix.
                     self.header.yPixelSize = 1.0
-                self.nStokes = len(self.header.stokesParams.split(','))
+                self.nStokes = len(self.header.stokesParams.split(b','))
                 
-                intSize = self._intHeaderStructs[self.version].sizeof() + \
+                intHeader = self._IntHeader()
+                intSize = intHeader.sizeof() + \
                     4 * (self.header.nSpecChans +
                         self.nStokes * self.header.xSize * self.header.ySize)
-                if (fileSize - 16 - headerStruct.sizeof()) % intSize != 0:
+                if (fileSize - 16 - self.header.sizeof()) % intSize != 0:
                     raise RuntimeError('The file "%s" appears to be '
                                     'corrupted.' % fileName)
                 self.nIntegrations = \
-                    (fileSize - 16 - headerStruct.sizeof()) // intSize
+                    (fileSize - 16 - self.header.sizeof()) // intSize
                 
                 if mode == 'r+b':
                     self.file.seek(0, os.SEEK_END)
@@ -268,19 +288,11 @@ class PasiImageDB(object):
             # receive the first image, which will fill in some information
             # (e.g., resolution) that isn't yet available.
             self.version = self._currentFormatVersion
-            self.header = construct.Container(
-                corrVersion   = corrVersion,
-                imagerVersion = imagerVersion,
-                station       = station,
-                stokesParams  = '',
-                xSize         = 0,
-                ySize         = 0,
-                nSpecChans    = 0,
-                flags         = self.flagSorted,  # Sorted until an out-of-
-                xPixelSize    = 0.,               # order image is added
-                yPixelSize    = 0.,
-                startTime     = 0.,
-                stopTime      = 0. )
+            self.header = self._FileHeader()
+            self.header.corrVersion = corrVersion
+            self.header.imagerVersion = imagerVersion
+            self.header.station = station
+            self.header.flags = self.flagSorted
             self.nIntegrations = 0
     
     
@@ -299,8 +311,7 @@ class PasiImageDB(object):
         
         if self._fileHeaderOutdated:
             self.file.seek(16, os.SEEK_SET)
-            headerStruct = self._fileHeaderStructs[self.version]
-            headerStruct.build_stream(self.header, self.file)
+            self.file.write(self.header)
         
         self.file.close()
         self.iIntegration = -1
@@ -325,10 +336,12 @@ class PasiImageDB(object):
             raise IndexError('PasiImageDB index %d outside of range [0, %d)' %
                             (index, self.nIntegrations))
         if self.iIntegration != index:
-            intSize = self._intHeaderStructs[self.version].sizeof() + \
+            intHeader = self._IntHeader()
+            intSize = intHeader.sizeof() + \
                 4 * (self.header.nSpecChans +
                     self.nStokes * self.header.xSize * self.header.ySize)
-            headerSize = 16 + self._fileHeaderStructs[self.version].sizeof()
+            fileHeader = self._FileHeader()
+            headerSize = 16 + fileHeader.sizeof()
             self.file.seek(headerSize + intSize * index, os.SEEK_SET)
             self.iIntegration = index
     
@@ -358,9 +371,9 @@ class PasiImageDB(object):
             self.header.yPixelSize   = yPixelSize
             self.header.nSpecChans   = nSpecChans
             self.file.write(struct.pack('16s', self.version))
-            headerStruct = self._fileHeaderStructs[self.version]
-            headerStruct.build_stream(self.header, self.file)
-            self.nStokes = len(self.header.stokesParams.split(','))
+            headerStruct = self._fileHeaderStructs[self.version]()
+            self.file.write(headerStruct)
+            self.nStokes = len(self.header.stokesParams.split(b','))
             self._isNewFile = False
         
         else:
@@ -456,8 +469,12 @@ class PasiImageDB(object):
             len(spec) if spec is not None else 0)
         
         # Write it out.
-        headerStruct = self._intHeaderStructs[self.version]
-        headerStruct.build_stream(info, self.file)
+        intHeader = self._IntHeader()
+        for key in info.keys():
+            if key not in intHeader.keys():
+                continue
+            setattr(intHeader, key, info[key])
+        self.file.write(intHeader)
         if spec is not None:
             spec.astype(np.float32).tofile(self.file)
         data.astype(np.float32).tofile(self.file)
@@ -492,8 +509,8 @@ class PasiImageDB(object):
         spec -- if available, an array containing the single dipole spectrum
         """
         
-        headerStruct = self._intHeaderStructs[self.version]
-        intHeader = headerStruct.parse_stream(self.file)
+        intHeader = self._IntHeader()
+        self.file.readinto(intHeader)
         intHeader.xPixelSize = self.header.xPixelSize
         intHeader.yPixelSize = self.header.yPixelSize
         intHeader.stokesParams = self.header.stokesParams
@@ -501,7 +518,7 @@ class PasiImageDB(object):
             intHeader.gain = -1
         if 'fill' not in intHeader:
             intHeader.fill = -1.
-        
+            
         nStokes, cx, cy = self.nStokes, self.header.xSize, self.header.ySize
         if self.header.nSpecChans > 0:
             spec = np.fromfile(self.file, np.float32, self.header.nSpecChans)
@@ -527,7 +544,7 @@ class PasiImageDB(object):
             return
         
         # Read the entire input database into memory.
-        inIntHeaderStruct = PasiImageDB._intHeaderStructs[inDB.version]
+        inIntHeaderStruct = PasiImageDB._intHeaderStructs[inDB.version]()
         headerSize = inIntHeaderStruct.sizeof()
         dataSize = 4 * (inDB.header.nSpecChans +
                         inDB.nStokes * inDB.header.xSize * inDB.header.ySize)
@@ -543,7 +560,7 @@ class PasiImageDB(object):
         # Determine the sort order of those times.
         times = np.array([
                 struct.unpack_from('d', data, offset = i)[0] for i in
-                xrange(PasiImageDB._timeOffsets[inDB.version],
+                range(PasiImageDB._timeOffsets[inDB.version],
                     intSize * inDB.nIntegrations, intSize)])
         
         intOrder = times.argsort()
@@ -556,15 +573,16 @@ class PasiImageDB(object):
         
         outFile = open(fileName, 'w')
         outVersion = PasiImageDB._currentFormatVersion
-        outFileHeaderStruct = PasiImageDB._fileHeaderStructs[outVersion]
-        outIntHeaderStruct = PasiImageDB._intHeaderStructs[outVersion]
+        outFileHeaderStruct = PasiImageDB._fileHeaderStructs[outVersion]()
+        outIntHeaderStruct = PasiImageDB._intHeaderStructs[outVersion]()
         outFile.write(struct.pack('16s', outVersion))
-        outFileHeaderStruct.build_stream(inDB.header, outFile)
+        outFile.write(inDB.header)
         
-        for iOut in xrange(inDB.nIntegrations):
+        for iOut in range(inDB.nIntegrations):
             i = intOrder[iOut] * intSize
-            header = inIntHeaderStruct.parse(data[i : i + headerSize])
-            outIntHeaderStruct.build_stream(header, outFile)
+            header = PasiImageDB._intHeaderStructs[outVersion]()
+            ctypes.memmove(ctypes.addressof(header), data[i : i + headerSize], headerSize)
+            outFile.write(header)
             outFile.write(data[i + headerSize : i + intSize])
         
         outFile.close()
@@ -573,16 +591,23 @@ class PasiImageDB(object):
     # Implement some built-ins to make reading images more "Pythonic" ...
     def __len__(self):
         return self.nIntegrations
-    
+        
+        
     def __getitem__(self, index):
         self.seek(index)
         return self.readImage()
-    
+        
+        
     def __iter__(self):
         return self
-    
-    def next(self):
+        
+        
+    def __next__(self):
         if self.iIntegration >= self.nIntegrations:
             raise StopIteration
         else:
             return self.readImage()
+            
+            
+    def next(self):
+        return self.__next__()
