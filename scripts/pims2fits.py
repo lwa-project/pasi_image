@@ -1,20 +1,16 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
-import sys
-if sys.version_info > (3,):
-    xrange = range
-    
+
 import os
 import sys
 import numpy
-import pyfits
+from astropy.io import fits as astrofits
 import argparse
 from datetime import datetime, timedelta
 
-from lsl.common.mcs import mjdmpm2datetime
+from lsl.common.mcs import mjdmpm_to_datetime
 
 from lsl_toolkits.PasiImage import PasiImageDB
 
@@ -58,7 +54,7 @@ def main(args):
             mjd = int(header['startTime'])
             mpm = int((header['startTime'] - mjd)*86400.0*1000.0)
             tInt = header['intLen']*86400.0
-            dateObs = mjdmpm2datetime(mjd, mpm)
+            dateObs = mjdmpm_to_datetime(mjd, mpm)
             dateEnd = dateObs + timedelta(seconds=int(tInt), microseconds=int((tInt-int(tInt))*1000000))
             if args.verbose:
                 print("    start time: %s" % dateObs)
@@ -67,7 +63,7 @@ def main(args):
                 print("    frequency: %.3f MHz" % header['freq'])
                 
             ## Create the FITS HDU and fill in the header information
-            hdu = pyfits.PrimaryHDU(data=data)
+            hdu = astrofits.PrimaryHDU(data=data)
             hdu.header['TELESCOP'] = 'LWA1'
             ### Date and time
             hdu.header['DATE-OBS'] = dateObs.strftime("%Y-%m-%dT%H:%M:%S")
@@ -101,8 +97,8 @@ def main(args):
             
             ## Write it to disk
             outName = "pasi_%.3fMHz_%s.fits" % (header['freq']/1e6, dateObs.strftime("%Y-%m-%dT%H-%M-%S"))
-            hdulist = pyfits.HDUList([hdu,])
-            hdulist.writeto(outName, clobber=args.force)
+            hdulist = astrofits.HDUList([hdu,])
+            hdulist.writeto(outName, overwrite=args.force)
             
             ## Update the counter
             fitsCounter += 1

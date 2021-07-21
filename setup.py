@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
 
 import glob
@@ -14,7 +14,7 @@ except ImportError:
 
 setup(
     name                 = "lsl-toolkits-pasiimage",
-    version              = "0.1.5",
+    version              = "0.2.0",
     description          = "LSL Toolkit for PASI Image Database Files", 
     long_description     = "LWA Software Library reader for PASI Image Database files",
     url                  = "https://fornax.phys.unm.edu/lwa/trac/", 
@@ -34,9 +34,9 @@ setup(
     packages             = find_packages(exclude="tests"), 
     namespace_packages   = ['lsl_toolkits',],
     scripts              = glob.glob('scripts/*.py'), 
-    python_requires      = '>=2.6, <3', 
+    python_requires      = '>=2.7', 
     setup_requires       = ['numpy>=1.2'], 
-    install_requires     = ['numpy>=1.2', 'construct>=2.5,<2.8', 'lsl>=1.2, <1.3'], 
+    install_requires     = ['numpy>=1.2', 'lsl>=2.0'], 
     include_package_data = True,  
     zip_safe             = False,  
     test_suite           = "tests"

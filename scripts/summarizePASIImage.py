@@ -1,17 +1,13 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-# Python3 compatibility
+# Python2 compatibility
 from __future__ import print_function, division, absolute_import
-import sys
-if sys.version_info > (3,):
-    xrange = range
-    
+
 import os
 import sys
 import argparse
 
-from lsl.common.mcs import mjdmpm2datetime
+from lsl.common.mcs import mjdmpm_to_datetime
 
 from lsl_toolkits.PasiImage import PasiImageDB
 
@@ -40,7 +36,7 @@ def main(args):
         hdr, data, spc = db.readImage()
         mjd = int(hdr.startTime)
         mpm = int((hdr.startTime - mjd)*86400*1000.0)
-        tStart = mjdmpm2datetime(mjd, mpm)
+        tStart = mjdmpm_to_datetime(mjd, mpm)
         print("    First Image:")
         print("      Start Time: %s" % tStart.strftime("%Y/%m/%d %H:%M:%S.%f"))
         print("      Integration Time: %.3f s" % (hdr.intLen*86400.0,))
@@ -52,7 +48,7 @@ def main(args):
         hdr, data, spc = db.readImage()
         mjd = int(hdr.startTime)
         mpm = int((hdr.startTime - mjd)*86400*1000.0)
-        tStart = mjdmpm2datetime(mjd, mpm)
+        tStart = mjdmpm_to_datetime(mjd, mpm)
         print("    Last Image:")
         print("      Start Time: %s" % tStart.strftime("%Y/%m/%d %H:%M:%S.%f"))
         print("      Integration Time: %.3f s" % (hdr.intLen*86400.0,))
