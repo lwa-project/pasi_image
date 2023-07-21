@@ -7,13 +7,67 @@ import os
 import sys
 import numpy
 from astropy.io import fits as astrofits
+from astropy.coordinates import AltAz, EarthLocation, SkyCoord
+from astropy.wcs import WCS
+from astropy.time import Time
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from lsl.common.mcs import mjdmpm_to_datetime
 
 from lsl_toolkits.PasiImage import PasiImageDB
 
+from scipy.interpolate import interp1d
+from lsl.common.paths import DATA as dataPath
+from lsl.misc import parser as aph
+import matplotlib.pyplot as plt
+
+
+def calcbeamprops(az,alt,header):
+    
+    # az and alt need to be the same shape as the image we will correct
+
+    freq = header['freq']
+    i = 0
+    beamDict = numpy.load(os.path.join(dataPath, 'lwa1-dipole-emp.npz'))
+    polarpatterns = []
+    for beamCoeff in (beamDict['fitX'], beamDict['fitY']):
+        alphaE = numpy.polyval(beamCoeff[0,0,:],freq )
+        betaE =  numpy.polyval(beamCoeff[0,1,:],freq )
+        gammaE = numpy.polyval(beamCoeff[0,2,:],freq )
+        deltaE = numpy.polyval(beamCoeff[0,3,:],freq )
+        alphaH = numpy.polyval(beamCoeff[1,0,:],freq )
+        betaH =  numpy.polyval(beamCoeff[1,1,:],freq )
+        gammaH = numpy.polyval(beamCoeff[1,2,:],freq )
+        deltaH = numpy.polyval(beamCoeff[1,3,:],freq )
+        corrFnc = None
+
+        def compute_beam_pattern(az, alt, corr=corrFnc):
+            zaR = numpy.pi/2 - alt*numpy.pi / 180.0 
+            azR = az*numpy.pi / 180.0
+            
+            c = 1.0
+            if corrFnc is not None:
+                c = corrFnc(alt*numpy.pi / 180.0)
+                c = numpy.where(numpy.isfinite(c), c, 1.0)
+                
+            pE = (1-(2*zaR/numpy.pi)**alphaE)*numpy.cos(zaR)**betaE + gammaE*(2*zaR/numpy.pi)*numpy.cos(zaR)**deltaE
+            pH = (1-(2*zaR/numpy.pi)**alphaH)*numpy.cos(zaR)**betaH + gammaH*(2*zaR/numpy.pi)*numpy.cos(zaR)**deltaH
+
+            return c*numpy.sqrt((pE*numpy.cos(azR))**2 + (pH*numpy.sin(azR))**2)
+        
+        # Calculate the beam
+        pattern = compute_beam_pattern(az, alt)
+        polarpatterns.append(pattern)
+
+            
+        i += 1
+    beamDict.close()
+    return polarpatterns[0], polarpatterns[1]
+    
+    
+
+        
 
 def main(args):
     # Loop over input .pims files
@@ -30,6 +84,7 @@ def main(args):
         ##  Loop over the images contained in it
         fitsCounter = 0
         for i,(header,data,spec) in enumerate(db):
+            
             if args.verbose:
                 print("  working on integration #%i" % (i+1))
                 
@@ -38,6 +93,7 @@ def main(args):
             
             ## Save the image size for later
             imSize = data.shape[-1]
+
             
             ## Zero outside of the horizon so avoid problems
             pScale = header['xPixelSize']
@@ -61,6 +117,45 @@ def main(args):
                 print("    end time: %s" % dateEnd)
                 print("    integration time: %.3f s" % tInt)
                 print("    frequency: %.3f MHz" % header['freq'])
+
+            
+            if args.pbcorr:
+                crval1 = header['zenithRA']*numpy.pi/180
+                crpix1 = imSize/2 + 1 + 0.5 * ((imSize+1)%2) 
+                cdelt1 = numpy.pi*(-360.0/(2*sRad)/numpy.pi)/180
+                crval2 = header['zenithDec']*numpy.pi/180
+                crpix2 = imSize/2 + 1 + 0.5 * ((imSize+1)%2) 
+                cdelt2 = numpy.pi*(360.0/(2*sRad)/numpy.pi)/180
+                ra = ((crval1 + (x - crpix1)*cdelt1/(numpy.cos(crval2)))*180/numpy.pi) 
+                dec = (crval2 + cdelt2*(y-crpix2))*180/numpy.pi
+                # Make dec go between -90 and 90
+                # Adjust RA accordingly
+                decover = dec>90
+                decdiff = dec[decover] - 90
+                dec[decover] = dec[decover] - decdiff
+                ra[decover] +=180
+                decoverneg = dec<-90
+                decdiffneg = dec[decoverneg] + 90
+                dec[decoverneg] = dec[decoverneg] + decdiffneg
+                ra[decoverneg] +=180
+                ra = ra % 360
+                
+                sc = SkyCoord(ra,dec,unit='deg')
+                lwa1 = EarthLocation.of_site('lwa1')  
+                time = Time(dateObs.strftime("%Y-%m-%dT%H:%M:%S"),format="isot")
+                aa = AltAz(location=lwa1, obstime=time)
+                myaltaz = sc.transform_to(aa)
+                alt = myaltaz.alt.deg
+                az = myaltaz.az.deg
+                # Keep alt between 0 and 90, adjust az accordingly
+                negalt = alt < 0
+                alt[negalt] += 90
+                az[negalt] + 180
+
+                XX,YY = calcbeamprops(az,alt,header)
+                # Correct stokes I only, need XY and YX for U and V, could do Q here
+                data[0]/=((XX+YY)/2)
+            
                 
             ## Create the FITS HDU and fill in the header information
             hdu = astrofits.PrimaryHDU(data=data)
@@ -94,6 +189,12 @@ def main(args):
             hdu.header['BPA'] = 0.0
             ### Frequency
             hdu.header['RESTFREQ'] = header['freq']
+
+
+
+
+
+
             
             ## Write it to disk
             outName = "pasi_%.3fMHz_%s.fits" % (header['freq']/1e6, dateObs.strftime("%Y-%m-%dT%H-%M-%S"))
@@ -121,6 +222,8 @@ if __name__ == "__main__":
                         help='force overwriting of FITS files')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='be verbose during the conversion')
+    parser.add_argument('-p', '--pbcorr', action='store_true',
+                        help='perform primary beam correction on stokes I only')
     args = parser.parse_args()
     main(args)
     
