@@ -71,12 +71,12 @@ def main(args):
             hdu.header['EXPTIME'] = tInt
             ### Coordinates - sky
             hdu.header['CTYPE1'] = 'RA---SIN'
-            hdu.header['CRPIX1'] = imSize/2 + 1 + 0.5 * ((imSize+1)%2)
+            hdu.header['CRPIX1'] = imSize/2 + 0.5 * ((imSize+1)%2)
             hdu.header['CDELT1'] = -360.0/(2*sRad)/numpy.pi
             hdu.header['CRVAL1'] = header['zenithRA']
             hdu.header['CUNIT1'] = 'deg'
             hdu.header['CTYPE2'] = 'DEC--SIN'
-            hdu.header['CRPIX2'] = imSize/2 + 1 + 0.5 * ((imSize+1)%2)
+            hdu.header['CRPIX2'] = imSize/2 + 0.5 * ((imSize+1)%2)
             hdu.header['CDELT2'] = 360.0/(2*sRad)/numpy.pi
             hdu.header['CRVAL2'] = header['zenithDec']
             hdu.header['CUNIT2'] = 'deg'
