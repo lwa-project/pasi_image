@@ -16,7 +16,7 @@ from lsl.common.stations import lwasv as lsllwasv
 from lsl.common.stations import lwana as lsllwana
 
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
-from astropy.wcs import WCS as astroWCS
+from astropy.wcs import WCS as AstroWCS
 from astropy.wcs.utils import pixel_to_skycoord
 from astropy.time import Time
 from astropy.io import fits as astrofits
@@ -66,7 +66,7 @@ def pbcorr(header,imSize,pScale,station):
     w = AstroWCS(naxis=2)
     w.wcs.crpix = [imSize/2 + 0.5 * ((imSize+1)%2),imSize/2  + 0.5 * ((imSize+1)%2)]
     # 130 degrees is what is visible to the dipoles
-    w.wcs.cdelt = np.array([-130/imSize,130/imSize]) 
+    w.wcs.cdelt = numpy.array([-130/imSize,130/imSize]) 
     w.wcs.crval = [header['zenithRA'],header['zenithDec']]
     w.wcs.ctype = ["RA---SIN", "DEC--SIN"]
     x = numpy.arange(imSize) - 0.5
