@@ -16,7 +16,7 @@ REQUIREMENTS
 ------------
   * python >= 2.7
   * numpy >= 1.2
-  * lsl >= 1.3 (required for some of the scripts)
+  * lsl >= 2.0, <3.0 (required for some of the scripts)
   * matplotlib >= 0.98.3 (required for some of the scripts)
   * astropy >= 2.0 (required for some of the scripts)
 
