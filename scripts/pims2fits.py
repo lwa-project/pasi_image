@@ -1,11 +1,8 @@
-#!/usr/bin/env python
-
-# Python2 compatibility
-from __future__ import print_function, division, absolute_import
+#!/usr/bin/env python3
 
 import os
 import sys
-import numpy
+import numpy as np
 from astropy.io import fits as astrofits
 import argparse
 from datetime import datetime, timedelta
@@ -14,6 +11,7 @@ from lsl.common.mcs import mjdmpm_to_datetime
 from lsl.common.paths import DATA as dataPath
 from lsl.common.stations import lwasv as lsllwasv
 from lsl.common.stations import lwana as lsllwana
+from lsl.sim.beam import beam_response
 
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
 from astropy.wcs import WCS as AstroWCS
@@ -23,55 +21,21 @@ from astropy.io import fits as astrofits
 
 from lsl_toolkits.PasiImage import PasiImageDB
 
-def calcbeamprops(az,alt,header,freq):
-
-    # az and alt need to be the same shape as the image we will correct
-
-    i = 0
-    beamDict = numpy.load(os.path.join(dataPath, 'lwa1-dipole-emp.npz'))
-    polarpatterns = []
-    for beamCoeff in (beamDict['fitX'], beamDict['fitY']):
-        alphaE = numpy.polyval(beamCoeff[0,0,:],freq )
-        betaE =  numpy.polyval(beamCoeff[0,1,:],freq )
-        gammaE = numpy.polyval(beamCoeff[0,2,:],freq )
-        deltaE = numpy.polyval(beamCoeff[0,3,:],freq )
-        alphaH = numpy.polyval(beamCoeff[1,0,:],freq )
-        betaH =  numpy.polyval(beamCoeff[1,1,:],freq )
-        gammaH = numpy.polyval(beamCoeff[1,2,:],freq )
-        deltaH = numpy.polyval(beamCoeff[1,3,:],freq )
-        corrFnc = None
-
-        def compute_beam_pattern(az, alt, corr=corrFnc):
-            zaR = numpy.pi/2 - alt*numpy.pi / 180.0
-            azR = az*numpy.pi / 180.0
-
-            c = 1.0
-            if corrFnc is not None:
-                c = corrFnc(alt*numpy.pi / 180.0)
-                c = numpy.where(numpy.isfinite(c), c, 1.0)
-
-            pE = (1-(2*zaR/numpy.pi)**alphaE)*numpy.cos(zaR)**betaE + gammaE*(2*zaR/numpy.pi)*numpy.cos(zaR)**deltaE
-            pH = (1-(2*zaR/numpy.pi)**alphaH)*numpy.cos(zaR)**betaH + gammaH*(2*zaR/numpy.pi)*numpy.cos(zaR)**deltaH
-
-            return c*numpy.sqrt((pE*numpy.cos(azR))**2 + (pH*numpy.sin(azR))**2)
-        # Calculate the beam
-        pattern = compute_beam_pattern(az, alt)
-        polarpatterns.append(pattern)
-        i += 1
-    beamDict.close()
-    return polarpatterns[0], polarpatterns[1]
-
 def pbcorr(header,imSize,pScale,station):
-    sRad   = 360.0/pScale/numpy.pi / 2
+    sRad   = 360.0/pScale/np.pi / 2
     w = AstroWCS(naxis=2)
-    w.wcs.crpix = [imSize/2 + 0.5 * ((imSize+1)%2),imSize/2  + 0.5 * ((imSize+1)%2)]
+    w.wcs.crpix = [(imSize + 1)/2.0,
+                   (imSize + 1)/2.0]
     # 130 degrees is what is visible to the dipoles
-    w.wcs.cdelt = numpy.array([-130/imSize,130/imSize]) 
-    w.wcs.crval = [header['zenithRA'],header['zenithDec']]
-    w.wcs.ctype = ["RA---SIN", "DEC--SIN"]
-    x = numpy.arange(imSize) - 0.5
-    y = numpy.arange(imSize) - 0.5
-    x,y = numpy.meshgrid(x,y)
+    w.wcs.cdelt = np.array([-130/imSize,
+                             130/imSize]) 
+    w.wcs.crval = [header['zenithRA'],
+                   header['zenithDec']]
+    w.wcs.ctype = ["RA---SIN",
+                   "DEC--SIN"]
+    x = np.arange(imSize) - 0.5
+    y = np.arange(imSize) - 0.5
+    x,y = np.meshgrid(x,y)
     maskpix  = ((x-imSize/2.0)**2 + (y-imSize/2.0)**2) > ((0.95*sRad)**2)
     x[maskpix] = imSize/2
     y[maskpix] = imSize/2
@@ -103,7 +67,8 @@ def pbcorr(header,imSize,pScale,station):
     alt[negalt] += 90
     az[negalt] + 180
     freq = header['freq']
-    XX,YY = calcbeamprops(az,alt,header,freq)
+    XX = beam_response('empirical', 'XX', az, alt, frequency=freq)
+    YY = beam_response('empirical', 'YY', az, alt, frequency=freq)
     return XX,YY
 
 def main(args):
@@ -125,18 +90,18 @@ def main(args):
                 print("  working on integration #%i" % (i+1))
                 
             ## Reverse the axis order so we can get it right in the FITS file
-            data = numpy.transpose(data, [0,2,1])
+            data = np.transpose(data, [0,2,1])
             
             ## Save the image size for later
             imSize = data.shape[-1]
             
             ## Zero outside of the horizon so avoid problems
             pScale = header['xPixelSize']
-            sRad   = 360.0/pScale/numpy.pi / 2
-            x = numpy.arange(data.shape[-2]) - 0.5
-            y = numpy.arange(data.shape[-1]) - 0.5
-            x,y = numpy.meshgrid(x,y)
-            invalid = numpy.where( ((x-imSize/2.0)**2 + (y-imSize/2.0)**2) > (sRad**2) )
+            sRad   = 360.0/pScale/np.pi / 2
+            x = np.arange(data.shape[-2]) - 0.5
+            y = np.arange(data.shape[-1]) - 0.5
+            x,y = np.meshgrid(x,y)
+            invalid = np.where( ((x-imSize/2.0)**2 + (y-imSize/2.0)**2) > (sRad**2) )
             data[:, invalid[0], invalid[1]] = 0.0
             ext = imSize/(2*sRad)
             if args.pbcorr:
@@ -167,12 +132,12 @@ def main(args):
             ### Coordinates - sky
             hdu.header['CTYPE1'] = 'RA---SIN'
             hdu.header['CRPIX1'] = imSize/2 + 0.5 * ((imSize+1)%2)
-            hdu.header['CDELT1'] = -360.0/(2*sRad)/numpy.pi
+            hdu.header['CDELT1'] = -360.0/(2*sRad)/np.pi
             hdu.header['CRVAL1'] = header['zenithRA']
             hdu.header['CUNIT1'] = 'deg'
             hdu.header['CTYPE2'] = 'DEC--SIN'
             hdu.header['CRPIX2'] = imSize/2 + 0.5 * ((imSize+1)%2)
-            hdu.header['CDELT2'] = 360.0/(2*sRad)/numpy.pi
+            hdu.header['CDELT2'] = 360.0/(2*sRad)/np.pi
             hdu.header['CRVAL2'] = header['zenithDec']
             hdu.header['CUNIT2'] = 'deg'
             ### Coordinates - Stokes parameters
@@ -220,4 +185,3 @@ if __name__ == "__main__":
                         help='be verbose during the conversion')
     args = parser.parse_args()
     main(args)
-    

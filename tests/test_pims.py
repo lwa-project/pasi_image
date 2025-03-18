@@ -43,7 +43,7 @@ class pims_tests(unittest.TestCase):
         # Read in the first image with the correct number of elements
         hdr, data, spec = db.readImage()
         ## Image
-        self.assertEqual(data.shape[0], len(db.header.stokesParams.split(b',')))
+        self.assertEqual(data.shape[0], len(db.header.stokesParams.split(',')))
         self.assertEqual(data.shape[1], db.header.xSize)
         self.assertEqual(data.shape[2], db.header.ySize)
         ## Spectra
@@ -111,6 +111,16 @@ class pims_tests(unittest.TestCase):
         db0.close()
         db1.close()
         
+    def test_pims_compat(self):
+        """Test compatibility of readImage with an Orville image."""
+        
+        db = PasiImage.PasiImageDB(pimsFile, 'r')
+        hdr, data, spec = db.readImage()
+        
+        for key in ('start_time', 'int_len', 'start_freq', 'stop_freq', 'bandwidth',
+                    'center_ra', 'center_dec', 'pixel_size', 'stokes_params', 'station'):
+            self.assertTrue(key in hdr)
+            
     def tearDown(self):
         """Remove the test path directory and its contents"""
         

@@ -47,6 +47,11 @@ class _PrintableLittleEndianStructure(ctypes.LittleEndianStructure):
             raise KeyError("Cannot find key '%s'" % key)
         return value
         
+    def __setattr__(self, key, value):
+        if isinstance(value, str):
+            value = value.encode()
+        super().__setattr__(key, value)
+        
     def __setitem__(self, key, value):
         setattr(self, key, value)
         
@@ -328,12 +333,24 @@ class PasiImageDB(object):
     def header(self) -> HeaderContainer[str, Any]:
         """
         The file header as a dictionary.
+        
+        .. note:: This may contain duplicate entries to allow compatibility
+                  with Orville image data products.
         """
         
         hdr = HeaderContainer(self._header.as_dict())
         for k in hdr:
             if isinstance(hdr[k], bytes):
                 hdr[k] = hdr[k].decode()
+                
+        # Compatibility entries
+        if 'stokesParams' in hdr:
+            hdr['stokes_params'] = hdr['stokesParams']
+        if 'startTime' in hdr:
+            hdr['start_time'] = hdr['startTime']
+        if 'stopTime' in hdr:
+            hdr['stopt_time'] = hdr['stopTime']
+            
         return hdr
         
     def close(self):
@@ -467,7 +484,7 @@ class PasiImageDB(object):
             self._header.flags &= ~self.flagSorted
             self._fileHeaderOutdated = True
     
-    def addImage(self, info: HeaderContainer[src, Any], data: np.ndarray,
+    def addImage(self, info: HeaderContainer[str, Any], data: np.ndarray,
                        spec: Optional[np.ndarray] = None):
         """
         Adds an integration to the database.  Returns the index of the newly
@@ -548,10 +565,11 @@ class PasiImageDB(object):
             intHeader.gain = -1
         if 'fill' not in intHeader:
             intHeader.fill = -1.
-        hdr = HeaderContainer({'station': self._header.attrs['station'],
-                               'stokes_params': self._header.attrs['stokes_params'],
-                               'pixel_size': self._header.attrs['pixel_size'],
-                               'ngrid': self._header.attrs['ngrid'],
+        hdr = HeaderContainer({'station': self._header.station,
+                               'stokesParams': self._header.stokesParams,
+                               'xPixelSize': self._header.xPixelSize,
+                               'yPixelSize': self._header.yPixelSize,
+                               'xSize': self._header.xSize,
                                'time_format': 'mjd',
                                'time_scale': 'tai'
                                })
@@ -560,6 +578,16 @@ class PasiImageDB(object):
             if isinstance(value, bytes):
                 hdr[key] = value.decode()
                 
+        # Compatibility entries
+        hdr['start_time'] = hdr['startTime']
+        hdr['pixel_size'] = hdr['xPixelSize']
+        hdr['ngrid'] = hdr['xSize']
+        hdr['int_len'] = hdr['intLen']
+        hdr['start_freq'] = hdr['stop_freq'] = hdr['freq']
+        hdr['center_ra'] = hdr['zenithRA']
+        hdr['center_dec'] = hdr['zenithDec']
+        hdr['stokes_params'] = hdr['stokesParams']
+        
         nStokes, cx, cy = self.nStokes, self._header.xSize, self._header.ySize
         if self._header.nSpecChans > 0:
             spec = np.fromfile(self.file, np.float32, self._header.nSpecChans)

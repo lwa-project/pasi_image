@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
-# Python2 compatibility
-from __future__ import print_function, division, absolute_import
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -69,4 +66,3 @@ if __name__ == "__main__":
                         help='filename to read')
     args = parser.parse_args()
     main(args)
-    
