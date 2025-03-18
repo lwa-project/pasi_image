@@ -2,12 +2,6 @@
 Unit tests for the various USRP scripts.
 """
 
-# Python2 compatibility
-from __future__ import print_function, division, absolute_import
-import sys
-if sys.version_info < (3,):
-    range = xrange
-    
 import unittest
 import glob
 import sys
@@ -33,7 +27,7 @@ except ImportError:
     pass
 
 
-__version__  = "0.1"
+__version__  = "0.2"
 __author__   = "Jayce Dowell"
 
 

@@ -333,9 +333,6 @@ class PasiImageDB(object):
     def header(self) -> HeaderContainer[str, Any]:
         """
         The file header as a dictionary.
-        
-        .. note:: This may contain duplicate entries to allow compatibility
-                  with Orville image data products.
         """
         
         hdr = HeaderContainer(self._header.as_dict())
@@ -343,14 +340,6 @@ class PasiImageDB(object):
             if isinstance(hdr[k], bytes):
                 hdr[k] = hdr[k].decode()
                 
-        # Compatibility entries
-        if 'stokesParams' in hdr:
-            hdr['stokes_params'] = hdr['stokesParams']
-        if 'startTime' in hdr:
-            hdr['start_time'] = hdr['startTime']
-        if 'stopTime' in hdr:
-            hdr['stopt_time'] = hdr['stopTime']
-            
         return hdr
         
     def close(self):
@@ -570,24 +559,15 @@ class PasiImageDB(object):
                                'xPixelSize': self._header.xPixelSize,
                                'yPixelSize': self._header.yPixelSize,
                                'xSize': self._header.xSize,
-                               'time_format': 'mjd',
-                               'time_scale': 'tai'
+                               'ySize': self._header.ySize,
+                               'timeFormat': 'mjd',
+                               'timeScale': 'tai'
                                })
         hdr.update(intHeader.as_dict())
         for key,value in hdr.items():
             if isinstance(value, bytes):
                 hdr[key] = value.decode()
                 
-        # Compatibility entries
-        hdr['start_time'] = hdr['startTime']
-        hdr['pixel_size'] = hdr['xPixelSize']
-        hdr['ngrid'] = hdr['xSize']
-        hdr['int_len'] = hdr['intLen']
-        hdr['start_freq'] = hdr['stop_freq'] = hdr['freq']
-        hdr['center_ra'] = hdr['zenithRA']
-        hdr['center_dec'] = hdr['zenithDec']
-        hdr['stokes_params'] = hdr['stokesParams']
-        
         nStokes, cx, cy = self.nStokes, self._header.xSize, self._header.ySize
         if self._header.nSpecChans > 0:
             spec = np.fromfile(self.file, np.float32, self._header.nSpecChans)

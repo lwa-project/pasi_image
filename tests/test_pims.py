@@ -2,12 +2,6 @@
 Unit test for lsl_toolkit.PasiImage module.
 """
 
-# Python2 compatibility
-from __future__ import print_function, division, absolute_import
-import sys
-if sys.version_info < (3,):
-    range = xrange
-    
 import os
 import numpy
 import tempfile
@@ -16,7 +10,7 @@ import unittest
 from lsl_toolkits import PasiImage as PasiImage
 
 
-__version__  = "0.1"
+__version__  = "0.2"
 __author__    = "Jayce Dowell"
 
 
@@ -111,16 +105,6 @@ class pims_tests(unittest.TestCase):
         db0.close()
         db1.close()
         
-    def test_pims_compat(self):
-        """Test compatibility of readImage with an Orville image."""
-        
-        db = PasiImage.PasiImageDB(pimsFile, 'r')
-        hdr, data, spec = db.readImage()
-        
-        for key in ('start_time', 'int_len', 'start_freq', 'stop_freq', 'bandwidth',
-                    'center_ra', 'center_dec', 'pixel_size', 'stokes_params', 'station'):
-            self.assertTrue(key in hdr)
-            
     def tearDown(self):
         """Remove the test path directory and its contents"""
         
