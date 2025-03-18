@@ -3,12 +3,6 @@ This module provides the PasiImageDB class, which manages transactions
 with a binary file format that stores PASI images.
 """
 
-# Python2 compatibility
-from __future__ import print_function, division, absolute_import
-import sys
-if sys.version_info < (3,):
-    range = xrange
-    
 import os
 import sys
 import ctypes
@@ -16,8 +10,29 @@ import shutil
 import struct
 import numpy as np
 
-__version__ = '0.2'
+from typing import Dict, Any, Optional, Tuple, List, TypeVar, Union
+
+__version__ = '0.3'
 __all__ = ['PasiImageDB',]
+
+
+K = TypeVar('K')
+V = TypeVar('V')
+
+class HeaderContainer(Dict[K, V]):
+    """
+    Sub-class of dict that supports access of keys as attributes.
+    """
+    
+    def __getattr__(self, key: K) -> V:
+        """
+        Support for attribute-style access: header.key
+        """
+        
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError(f"Header has no attribute '{key}'")
 
 
 class _PrintableLittleEndianStructure(ctypes.LittleEndianStructure):
@@ -56,6 +71,7 @@ class _PrintableLittleEndianStructure(ctypes.LittleEndianStructure):
         
     def __repr__(self):
         return repr(self.as_dict())
+
 
 class _PasiImageDBv001_FileHeader(_PrintableLittleEndianStructure):
     _pack_   = 1
@@ -178,8 +194,9 @@ class PasiImageDB(object):
                     b'PasiImageDBv002': 256,
                     b'PasiImageDBv003': 256 }
     
-    def __init__(self, fileName, mode = 'r',
-                 corrVersion = '', imagerVersion = '', station = ''):
+    def __init__(self, fileName: str, mode: str = 'r',
+                 corrVersion: str = '', imagerVersion: str = '',
+                 station: str = ''):
         """
         Constructs a new PasiImageDB.
         
@@ -208,7 +225,7 @@ class PasiImageDB(object):
             fileSize = os.path.getsize(fileName)
             if fileSize == 0:
                 self.version = self._currentFormatVersion
-                self.header = self._FileHeader()
+                self._header = self._FileHeader()
                 self.iIntegration = 0
                 self.nIntegrations = 0
                 self.nStokes = 0
@@ -243,8 +260,8 @@ class PasiImageDB(object):
             self.version = self.file.read(16).rstrip(b'\x00')
             if self.version not in self._fileHeaderStructs:
                 raise KeyError('The file "%s" does not appear to be a '
-                            'PasiImageDB file.  Initial string: "%s"' %
-                            (fileName, self.version))
+                               'PasiImageDB file.  Initial string: "%s"' %
+                               (fileName, self.version))
             self._FileHeader = self._fileHeaderStructs[self.version]
             self._IntHeader = self._intHeaderStructs[self.version]
             self._TimeOffsets = self._timeOffsets[self.version]
@@ -260,22 +277,22 @@ class PasiImageDB(object):
             
             else:
                 # It looks like we should have a good header, at least ....
-                self.header = self._FileHeader()
-                self.file.readinto(self.header)
+                self._header = self._FileHeader()
+                self.file.readinto(self._header)
                 if self.version < b'PasiImageDBv002':
-                    self.header.xPixelSize = 1.0  # Default to 1 deg/pix.
-                    self.header.yPixelSize = 1.0
-                self.nStokes = len(self.header.stokesParams.split(b','))
+                    self._header.xPixelSize = 1.0  # Default to 1 deg/pix.
+                    self._header.yPixelSize = 1.0
+                self.nStokes = len(self._header.stokesParams.split(b','))
                 
                 intHeader = self._IntHeader()
                 intSize = intHeader.sizeof() + \
-                    4 * (self.header.nSpecChans +
-                        self.nStokes * self.header.xSize * self.header.ySize)
-                if (fileSize - 16 - self.header.sizeof()) % intSize != 0:
+                    4 * (self._header.nSpecChans +
+                        self.nStokes * self._header.xSize * self._header.ySize)
+                if (fileSize - 16 - self._header.sizeof()) % intSize != 0:
                     raise RuntimeError('The file "%s" appears to be '
                                     'corrupted.' % fileName)
                 self.nIntegrations = \
-                    (fileSize - 16 - self.header.sizeof()) // intSize
+                    (fileSize - 16 - self._header.sizeof()) // intSize
                 
                 if mode == 'r+b':
                     self.file.seek(0, os.SEEK_END)
@@ -288,19 +305,37 @@ class PasiImageDB(object):
             # receive the first image, which will fill in some information
             # (e.g., resolution) that isn't yet available.
             self.version = self._currentFormatVersion
-            self.header = self._FileHeader()
-            self.header.corrVersion = corrVersion
-            self.header.imagerVersion = imagerVersion
-            self.header.station = station
-            self.header.flags = self.flagSorted
+            self._header = self._FileHeader()
+            self._header.corrVersion = corrVersion
+            self._header.imagerVersion = imagerVersion
+            self._header.station = station
+            self._header.flags = self.flagSorted
             self.nIntegrations = 0
-    
     
     def __del__(self):
         if self.file is not None and not self.file.closed:
             self.close()
     
-    
+    @property
+    def file_type(self) -> str:
+        """
+        Type of PASI image file.
+        """
+        
+        return type(self).__name__
+        
+    @property
+    def header(self) -> HeaderContainer[str, Any]:
+        """
+        The file header as a dictionary.
+        """
+        
+        hdr = HeaderContainer(self._header.as_dict())
+        for k in hdr:
+            if isinstance(hdr[k], bytes):
+                hdr[k] = hdr[k].decode()
+        return hdr
+        
     def close(self):
         """
         Closes the database file.  If the header information is outdated, it
@@ -311,25 +346,21 @@ class PasiImageDB(object):
         
         if self._fileHeaderOutdated:
             self.file.seek(16, os.SEEK_SET)
-            self.file.write(self.header)
+            self.file.write(self._header)
         
         self.file.close()
         self.iIntegration = -1
     
-    
-    def closed(self):
+    def closed(self) -> bool:
         return self.file is None or self.file.closed
     
-    
-    def getpos(self):
+    def getpos(self) -> int:
         return self.iIntegration
     
-    
-    def eof(self):
+    def eof(self) -> bool:
         return self.iIntegration >= self.nIntegrations
     
-    
-    def seek(self, index):
+    def seek(self, index: int):
         if index < 0:
             index += self.nIntegrations
         if index < 0 or index >= self.nIntegrations:
@@ -338,17 +369,16 @@ class PasiImageDB(object):
         if self.iIntegration != index:
             intHeader = self._IntHeader()
             intSize = intHeader.sizeof() + \
-                4 * (self.header.nSpecChans +
-                    self.nStokes * self.header.xSize * self.header.ySize)
+                4 * (self._header.nSpecChans +
+                    self.nStokes * self._header.xSize * self._header.ySize)
             fileHeader = self._FileHeader()
             headerSize = 16 + fileHeader.sizeof()
             self.file.seek(headerSize + intSize * index, os.SEEK_SET)
             self.iIntegration = index
     
-    
-    def _checkHeader(self, stokesParams, xSize, ySize,
-                    xPixelSize, yPixelSize, nSpecChans,
-                    station = None):
+    def _checkHeader(self, stokesParams: str, xSize: int, ySize: int,
+                    xPixelSize: float, yPixelSize: float, nSpecChans: int,
+                    station: Optional[str] = None):
         """
         For new files, adds the given information to the file header and
         writes the header to disk.  For existing files, compares the given
@@ -363,58 +393,58 @@ class PasiImageDB(object):
             # If this is the file's first image, fill in values of the file
             # header based on the image properties, then write the header.
             if station:
-                self.header.station  = station
-            self.header.stokesParams = stokesParams
-            self.header.xSize        = xSize
-            self.header.ySize        = ySize
-            self.header.xPixelSize   = xPixelSize
-            self.header.yPixelSize   = yPixelSize
-            self.header.nSpecChans   = nSpecChans
+                self._header.station  = station
+            self._header.stokesParams = stokesParams
+            self._header.xSize        = xSize
+            self._header.ySize        = ySize
+            self._header.xPixelSize   = xPixelSize
+            self._header.yPixelSize   = yPixelSize
+            self._header.nSpecChans   = nSpecChans
             self.file.write(struct.pack('16s', self.version))
             headerStruct = self._fileHeaderStructs[self.version]()
             self.file.write(headerStruct)
-            self.nStokes = len(self.header.stokesParams.split(b','))
+            self.nStokes = len(self._header.stokesParams.split(b','))
             self._isNewFile = False
         
         else:
             # Make sure the station name (if given) matches expectations.
-            if station and station != self.header.station:
+            if station and station != self._header.station:
                 raise ValueError(
                     'The station given for this image ("%s") does not match '
                     'this file\'s station ("%s").' %
-                    (station, self.header.station))
+                    (station, self._header.station))
             
             # Make sure that the Stokes parameters match expectations.
-            if stokesParams != self.header.stokesParams:
+            if stokesParams != self._header.stokesParams:
                 raise ValueError(
                     'The Stokes parameters for this image (%s) do not match '
                     'this file\'s parameters (%s).' %
-                    (stokesParams, self.header.stokesParams))
+                    (stokesParams, self._header.stokesParams))
             
             # Make sure that the dimensions of the data match expectations.
-            if xSize != self.header.xSize or ySize != self.header.ySize:
+            if xSize != self._header.xSize or ySize != self._header.ySize:
                 raise ValueError(
                     'The spatial resolution of this image (%d x %d) does not '
                     'match this file\'s resolution (%d x %d).' %
-                    (xSize, ySize, self.header.xSize, self.header.ySize))
+                    (xSize, ySize, self._header.xSize, self._header.ySize))
             
-            if xPixelSize != self.header.xPixelSize or \
-            yPixelSize != self.header.yPixelSize:
+            if xPixelSize != self._header.xPixelSize or \
+            yPixelSize != self._header.yPixelSize:
                 raise ValueError(
                     'The pixel size of this image (%r deg x %r deg) does not '
                     'match this file\'s resolution (%r deg x %r deg).' %
                     (xPixelSize, yPixelSize,
-                    self.header.xPixelSize, self.header.yPixelSize))
+                    self._header.xPixelSize, self._header.yPixelSize))
             
             # Make sure that the size of the spectrum matches expectations.
-            if nSpecChans != self.header.nSpecChans:
+            if nSpecChans != self._header.nSpecChans:
                 raise ValueError(
                     'The length of the spectrum for this image (%d) does not '
                     'match this file\'s spectrum length (%d).'
-                    % (nSpecChans, self.header.nSpecChans))
+                    % (nSpecChans, self._header.nSpecChans))
     
     
-    def _updateHeaderInfo(self, interval):
+    def _updateHeaderInfo(self, interval: Tuple[float, float]):
         """
         To be called at the end of the addImage functions.  Updates the header
         information to reflect the new data.
@@ -422,22 +452,23 @@ class PasiImageDB(object):
         self.nIntegrations += 1
         
         # Has this image expanded the time range covered by the file?
-        if self.header.startTime == 0 or \
-        self.header.startTime > interval[0]:
-            self.header.startTime = interval[0]
+        if self._header.startTime == 0 or \
+        self._header.startTime > interval[0]:
+            self._header.startTime = interval[0]
             self._fileHeaderOutdated = True
         
-        if self.header.stopTime < interval[1]:
-            self.header.stopTime = interval[1]
+        if self._header.stopTime < interval[1]:
+            self._header.stopTime = interval[1]
             self._fileHeaderOutdated = True
         
         # If the new image isn't later than all the others, and the file is
         # currently marked as sorted, then remove the sorted flag.
-        elif self.header.flags & self.flagSorted:
-            self.header.flags &= ~self.flagSorted
+        elif self._header.flags & self.flagSorted:
+            self._header.flags &= ~self.flagSorted
             self._fileHeaderOutdated = True
     
-    def addImage(self, info, data, spec = None):
+    def addImage(self, info: HeaderContainer[src, Any], data: np.ndarray,
+                       spec: Optional[np.ndarray] = None):
         """
         Adds an integration to the database.  Returns the index of the newly
         added image.
@@ -483,8 +514,7 @@ class PasiImageDB(object):
         self._updateHeaderInfo(interval)
         return self.nIntegrations - 1
     
-    
-    def readImage(self):
+    def readImage(self) -> Tuple[HeaderContainer[str, Any], np.ndarray, Optional[np.ndarray]]:
         """
         Reads an integration from the database.
         
@@ -511,28 +541,38 @@ class PasiImageDB(object):
         
         intHeader = self._IntHeader()
         self.file.readinto(intHeader)
-        intHeader.xPixelSize = self.header.xPixelSize
-        intHeader.yPixelSize = self.header.yPixelSize
-        intHeader.stokesParams = self.header.stokesParams
+        intHeader.xPixelSize = self._header.xPixelSize
+        intHeader.yPixelSize = self._header.yPixelSize
+        intHeader.stokesParams = self._header.stokesParams
         if 'gain' not in intHeader:
             intHeader.gain = -1
         if 'fill' not in intHeader:
             intHeader.fill = -1.
-            
-        nStokes, cx, cy = self.nStokes, self.header.xSize, self.header.ySize
-        if self.header.nSpecChans > 0:
-            spec = np.fromfile(self.file, np.float32, self.header.nSpecChans)
+        hdr = HeaderContainer({'station': self._header.attrs['station'],
+                               'stokes_params': self._header.attrs['stokes_params'],
+                               'pixel_size': self._header.attrs['pixel_size'],
+                               'ngrid': self._header.attrs['ngrid'],
+                               'time_format': 'mjd',
+                               'time_scale': 'tai'
+                               }
+        hdr.update(intHeader.as_dict())
+        for key,value in hdr.items():
+            if isinstance(value, bytes):
+                hdr[key] = value.decode()
+                
+        nStokes, cx, cy = self.nStokes, self._header.xSize, self._header.ySize
+        if self._header.nSpecChans > 0:
+            spec = np.fromfile(self.file, np.float32, self._header.nSpecChans)
         else:
             spec = None
         data = np.fromfile(self.file, np.float32, nStokes * cx * cy
-                        ).reshape(nStokes, cx, cy)
+                          ).reshape(nStokes, cx, cy)
         
         self.iIntegration += 1
-        return intHeader, data, spec
-    
+        return hdr, data, spec
     
     @staticmethod
-    def sort(fileName):
+    def sort(fileName: str):
         """
         Sorts the integrations in a DB file to be time-ordered.
         """
@@ -587,27 +627,22 @@ class PasiImageDB(object):
         
         outFile.close()
     
-    
     # Implement some built-ins to make reading images more "Pythonic" ...
-    def __len__(self):
+    def __len__(self) -> int:
         return self.nIntegrations
         
-        
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Tuple[HeaderContainer[str, Any], np.ndarray, Optional[np.ndarray]]:
         self.seek(index)
         return self.readImage()
         
-        
-    def __iter__(self):
+    def __iter__(self) -> 'PasiImageDB':
         return self
         
-        
-    def __next__(self):
+    def __next__(self) -> Tuple[HeaderContainer[str, Any], np.ndarray, Optional[np.ndarray]]:
         if self.iIntegration >= self.nIntegrations:
             raise StopIteration
         else:
             return self.readImage()
             
-            
-    def next(self):
+    def next(self) -> Tuple[HeaderContainer[str, Any], np.ndarray, Optional[np.ndarray]]:
         return self.__next__()
