@@ -554,7 +554,7 @@ class PasiImageDB(object):
                                'ngrid': self._header.attrs['ngrid'],
                                'time_format': 'mjd',
                                'time_scale': 'tai'
-                               }
+                               })
         hdr.update(intHeader.as_dict())
         for key,value in hdr.items():
             if isinstance(value, bytes):
