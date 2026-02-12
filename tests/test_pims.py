@@ -2,12 +2,6 @@
 Unit test for lsl_toolkit.PasiImage module.
 """
 
-# Python2 compatibility
-from __future__ import print_function, division, absolute_import
-import sys
-if sys.version_info < (3,):
-    range = xrange
-    
 import os
 import numpy
 import tempfile
@@ -16,7 +10,7 @@ import unittest
 from lsl_toolkits import PasiImage as PasiImage
 
 
-__version__  = "0.1"
+__version__  = "0.2"
 __author__    = "Jayce Dowell"
 
 
@@ -43,7 +37,7 @@ class pims_tests(unittest.TestCase):
         # Read in the first image with the correct number of elements
         hdr, data, spec = db.readImage()
         ## Image
-        self.assertEqual(data.shape[0], len(db.header.stokesParams.split(b',')))
+        self.assertEqual(data.shape[0], len(db.header.stokesParams.split(',')))
         self.assertEqual(data.shape[1], db.header.xSize)
         self.assertEqual(data.shape[2], db.header.ySize)
         ## Spectra
