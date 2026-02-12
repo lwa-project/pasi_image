@@ -9,8 +9,7 @@ from datetime import datetime, timedelta
 
 from lsl.common.mcs import mjdmpm_to_datetime
 from lsl.common.paths import DATA as dataPath
-from lsl.common.stations import lwasv as lsllwasv
-from lsl.common.stations import lwana as lsllwana
+from lsl.common.stations import lwa1, lwasv, lwana
 from lsl.sim.beam import beam_response
 
 from astropy.coordinates import AltAz, EarthLocation, SkyCoord
@@ -46,17 +45,12 @@ def pbcorr(header,imSize,pScale,station):
     tInt = header['intLen']*86400.0
     dateObs = mjdmpm_to_datetime(mjd, mpm)
     time = Time(dateObs.strftime("%Y-%m-%dT%H:%M:%S"),format="isot")
-    if station==b'LWASV':
-        x,y,z = lsllwasv.geocentric_location
-        lwasv = EarthLocation.from_geocentric(x=x,y=y,z=z,unit='m')
-        aa = AltAz(location=lwasv, obstime=time)
-    elif station==b'LWA1':
-        lwa1 = EarthLocation.of_site('lwa1')
-        aa = AltAz(location=lwa1, obstime=time)
-    elif station==b'LWANA':
-        x,y,z = lsllwana.geocentric_location
-        lwana = EarthLocation.from_geocentric(x=x,y=y,z=z,unit='m')
-        aa = AltAz(location=lwana, obstime=time)
+    if station == 'LWASV':
+        aa = AltAz(location=lwasv.earth_location, obstime=time)
+    elif station == 'LWA1':
+        aa = AltAz(location=lwa1.earth_location, obstime=time)
+    elif station == 'LWANA':
+        aa = AltAz(location=lwana.earth_location, obstime=time)
     else:
         print(station,"unrecognized")
     myaltaz = sc.transform_to(aa)
@@ -90,7 +84,7 @@ def main(args):
                 print("  working on integration #%i" % (i+1))
                 
             ## Reverse the axis order so we can get it right in the FITS file
-            data = np.transpose(data, [0,2,1])
+            data = np.transpose(data, [0,2,1])*1.0
             
             ## Save the image size for later
             imSize = data.shape[-1]

@@ -5,16 +5,14 @@ Unit tests for the various USRP scripts.
 import unittest
 import glob
 import sys
-import imp
 import re
 import os
 
 currentDir = os.path.abspath(os.getcwd())
-if os.path.exists(os.path.join(currentDir, 'setup.py')) and os.path.exists(os.path.join(currentDir, 'lsl_toolkits')):
-    modInfoBuild = imp.find_module('lsl_toolkits', [currentDir])
-    MODULE_BUILD =  os.path.abspath(modInfoBuild[1])
-elif os.path.exists(os.path.join(currentDir, 'test_scripts.py')):
+if os.path.exists(os.path.join(currentDir, 'setup.py')) and os.path.exists(os.path.join(currentDir, 'src', 'lsl_toolkits')):
     MODULE_BUILD = currentDir
+elif os.path.exists(os.path.join(currentDir, 'test_scripts.py')):
+    MODULE_BUILD = os.path.dirname(currentDir)
 else:
     MODULE_BUILD = None
     
@@ -31,7 +29,7 @@ __version__  = "0.2"
 __author__   = "Jayce Dowell"
 
 
-_LINT_RE = re.compile('(?P<module>.*?)\:(?P<line>\d+)\: (error )?[\[\(](?P<type>.*?)[\]\)] (?P<info>.*)')
+_LINT_RE = re.compile(r'(?P<module>.*?)\:(?P<line>\d+)\: (error )?[\[\(](?P<type>.*?)[\]\)] (?P<info>.*)')
 
 
 @unittest.skipUnless(run_scripts_tests, "requires the 'pylint' module")
@@ -64,14 +62,15 @@ def _test_generator(script):
 
 
 if run_scripts_tests:
-    _SCRIPTS = glob.glob(os.path.join(MODULE_BUILD, '..', 'scripts', '*.py'))
+    _SCRIPTS = glob.glob(os.path.join(MODULE_BUILD, 'scripts', '*.py'))
     _SCRIPTS.sort()
     for script in _SCRIPTS:
-        test = _test_generator(script)
+        _test = _test_generator(script)
         name = 'test_%s' % os.path.splitext(os.path.basename(script))[0]
         doc = """Static analysis of the '%s' script.""" % os.path.basename(script)
-        setattr(test, '__doc__', doc)
-        setattr(scripts_tests, name, test)
+        setattr(_test, '__doc__', doc)
+        setattr(scripts_tests, name, _test)
+    del _test, name, doc, script
 
 
 class scripts_test_suite(unittest.TestSuite):
