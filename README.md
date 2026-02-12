@@ -5,8 +5,9 @@ LSL Toolkit for Images Created by the Prototype All-Sky Imager (PASI)
 
 ### [![Paper](https://img.shields.io/badge/arXiv-1503.05150-blue.svg)](https://arxiv.org/abs/1503.05150)
 
-**Note:** PASI stopped producing data on 2025 March 1 (MJD 60735).  This
-package is now in maintenance mode for archival access to existing data.
+> [!IMPORTANT]
+> PASI stopped producing data on 2025 March 1 (MJD 60735).  This
+> package is now in maintenance mode for archival access to existing data.
 
 DESCRIPTION
 -----------
